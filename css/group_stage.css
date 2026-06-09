@@ -1,0 +1,344 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+  
+  body {
+    min-height: 100vh;
+    background: #f8fafc;
+    color: #111827;
+  }
+  
+  /* Header */
+  
+  .page-header {
+    width: 100%;
+    min-height: 72px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #7f1d1d;
+    text-decoration: none;
+    font-size: 24px;
+    font-weight: 800;
+  }
+  
+  .logo-icon {
+    font-size: 30px;
+  }
+  
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .header-actions label {
+    font-weight: 700;
+    color: #374151;
+  }
+  
+  .header-actions select {
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    font-size: 15px;
+    cursor: pointer;
+    outline: none;
+  }
+  
+  .header-actions select:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+  }
+  
+  /* Page */
+  
+  .group-stage-page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 34px 24px 50px;
+  }
+  
+  .page-title {
+    margin-bottom: 28px;
+  }
+  
+  .page-title h1 {
+    font-size: 36px;
+    color: #111827;
+    margin-bottom: 8px;
+  }
+  
+  .page-title p {
+    color: #64748b;
+    font-size: 16px;
+  }
+  
+  /* Groups */
+  
+  .groups-container {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  
+  .group-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
+  }
+  
+  .group-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  
+  .group-card-header h2 {
+    font-size: 24px;
+    color: #7c2d12;
+  }
+  
+  .group-card-header span {
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 12px;
+    border-radius: 999px;
+  }
+  
+  .group-content {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  
+  /* Matches */
+  
+  .matches-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .match-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 54px 54px 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+  }
+  
+  .match-date {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 700;
+  }
+  
+  .team-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+  }
+  
+  .home-team {
+    text-align: right;
+  }
+  
+  .away-team {
+    text-align: left;
+  }
+  
+  .score-input {
+    width: 54px;
+    padding: 9px 6px;
+    text-align: center;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    outline: none;
+  }
+  
+  .score-input:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+  }
+  
+  /* Table */
+  
+  .table-panel {
+    overflow-x: auto;
+  }
+  
+  .standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 14px;
+    overflow: hidden;
+    font-size: 14px;
+  }
+  
+  .standings-table thead {
+    background: #0f172a;
+    color: #ffffff;
+  }
+  
+  .standings-table th,
+  .standings-table td {
+    padding: 11px 9px;
+    text-align: center;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .standings-table th:first-child,
+  .standings-table td:first-child {
+    text-align: left;
+    min-width: 120px;
+  }
+  
+  .standings-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  
+  .standings-table tbody tr:nth-child(1),
+  .standings-table tbody tr:nth-child(2) {
+    background: #ecfdf5;
+  }
+  
+  .standings-table tbody tr:nth-child(1) td:first-child::before,
+  .standings-table tbody tr:nth-child(2) td:first-child::before {
+    content: "✓ ";
+    color: #16a34a;
+    font-weight: 900;
+  }
+  
+  .points-cell {
+    font-weight: 900;
+    color: #111827;
+  }
+  
+  /* Bottom */
+  
+  .bottom-actions {
+    margin-top: 34px;
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+  }
+  
+  .save-btn,
+  .secondary-btn {
+    border: none;
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 14px 24px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+  
+  .save-btn {
+    background: #f59e0b;
+    color: #ffffff;
+    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .save-btn:hover {
+    background: #d97706;
+    transform: translateY(-2px);
+  }
+  
+  .secondary-btn {
+    background: #e5e7eb;
+    color: #374151;
+  }
+  
+  .secondary-btn:hover {
+    background: #d1d5db;
+  }
+  
+  /* Responsive */
+  
+  @media (max-width: 980px) {
+    .group-content {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 720px) {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 16px 20px;
+    }
+  
+    .header-actions {
+      width: 100%;
+    }
+  
+    .header-actions select {
+      width: 100%;
+    }
+  
+    .page-title h1 {
+      font-size: 28px;
+    }
+  
+    .group-card {
+      padding: 18px;
+    }
+  
+    .match-row {
+      grid-template-columns: 1fr 45px 45px 1fr;
+      gap: 8px;
+    }
+  
+    .match-date {
+      grid-column: 1 / -1;
+      text-align: center;
+    }
+  
+    .home-team,
+    .away-team {
+      font-size: 14px;
+    }
+  
+    .bottom-actions {
+      flex-direction: column;
+    }
+  
+    .save-btn,
+    .secondary-btn {
+      width: 100%;
+      text-align: center;
+    }
+  }

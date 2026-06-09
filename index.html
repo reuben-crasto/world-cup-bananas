@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Welcome | World Cup Bananas</title>
+
+  <link rel="stylesheet" href="css/index.css" />
+  <script src="js/index.js" defer></script>
+</head>
+
+<body>
+  <main class="welcome-page">
+    <section class="welcome-card">
+
+      <header class="welcome-header">
+        <div class="title-row">
+          <div>
+            <p class="small-title">Prediction Game</p>
+            <h1>
+              World Cup <span>Bananas</span>
+            </h1>
+          </div>
+
+          <div class="trophy-icon" aria-hidden="true">
+            🏆
+          </div>
+        </div>
+
+        <p id="userGreeting" class="user-greeting">
+          Welcome!
+        </p>
+      </header>
+
+      <section class="intro-section">
+        <h2>About the Platform</h2>
+
+        <ul class="banana-list">
+          <li>
+            <span>🍌</span>
+            <p>
+              <strong>World Cup Bananas</strong> is a football prediction game where users fill in their tournament predictions.
+            </p>
+          </li>
+
+          <li>
+            <span>🍌</span>
+            <p>
+              You will predict group stage results, knockout teams, third place, finalist teams, and the final winner.
+            </p>
+          </li>
+
+          <li>
+            <span>🍌</span>
+            <p>
+              All predictions should be completed before the tournament begins or before the chosen deadline.
+            </p>
+          </li>
+
+          <li>
+            <span>🍌</span>
+            <p>
+              Points are awarded based on how close your predictions are to the actual tournament results.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="rules-section">
+        <h2>How Brackets Can Be Filled</h2>
+
+        <div class="info-grid">
+          <article class="info-box">
+            <h3>1. Manual Entry</h3>
+            <p>
+              Users can manually fill in match predictions for every group stage game.
+            </p>
+          </article>
+
+          <article class="info-box">
+            <h3>2. Score Predictions</h3>
+            <p>
+              Enter the expected goals for both teams. These scores will decide wins, losses, draws, and standings.
+            </p>
+          </article>
+
+          <article class="info-box">
+            <h3>3. Knockout Picks</h3>
+            <p>
+              After group predictions, users will select who advances through each knockout round.
+            </p>
+          </article>
+
+          <article class="info-box">
+            <h3>4. Final Winner</h3>
+            <p>
+              Complete the bracket by choosing the third-place winner, finalist teams, and overall champion.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="points-section">
+        <h2>Points System</h2>
+
+        <div class="points-card">
+          <h3>A. Group Stage</h3>
+
+          <ul>
+            <li>
+              Correct result — win, loss, or draw:
+              <strong>3 points</strong>
+            </li>
+
+            <li>
+              Correct number of goals for one team:
+              <strong>1 point</strong>
+            </li>
+
+            <li>
+              Correct goal difference, but wrong direction:
+              <strong>1 point</strong>
+            </li>
+
+            <li>
+              Correct goal difference and correct direction:
+              <strong>2 points</strong>
+            </li>
+          </ul>
+        </div>
+
+        <div class="points-card">
+          <h3>B. Knockout Stage</h3>
+
+          <ul>
+            <li>
+              Each correct team in the last 16:
+              <strong>3 points</strong>
+            </li>
+
+            <li>
+              Each correct team in the quarter-finals:
+              <strong>4 points</strong>
+            </li>
+
+            <li>
+              Each correct team in the semi-finals:
+              <strong>5 points</strong>
+            </li>
+
+            <li>
+              Each correct team in third place:
+              <strong>6 points</strong>
+            </li>
+
+            <li>
+              Each correct team in the final:
+              <strong>8 points</strong>
+            </li>
+
+            <li>
+              Correct third-place winner:
+              <strong>10 points</strong>
+            </li>
+
+            <li>
+              Correct tournament winner:
+              <strong>15 points</strong>
+            </li>
+          </ul>
+        </div>
+
+        <div class="points-card">
+          <h3>C. Bonus</h3>
+
+          <ul>
+            <li>
+              Watching or participating in a selected match event:
+              <strong>1 point</strong>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="action-section">
+        <a href="group_stage.html" class="start-btn">
+          Go to Group Stage
+        </a>
+
+        <button type="button" id="logoutBtn" class="logout-btn">
+          Logout
+        </button>
+      </section>
+
+    </section>
+  </main>
+</body>
+</html>

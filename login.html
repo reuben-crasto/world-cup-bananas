@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Login | Prediction Platform</title>
+
+  <link rel="stylesheet" href="css/login.css" />
+
+  <!-- defer makes sure JS runs after HTML is loaded -->
+  <script src="js/auth.js" defer></script>
+</head>
+
+<body>
+    <main class="auth-page">
+      <section class="auth-card">
+  
+        <div class="auth-header">
+          <h1>Prediction Platform</h1>
+          <p>Sign in or create an account to continue</p>
+        </div>
+  
+        <div class="auth-switch">
+          <button type="button" id="signInBtn" class="switch-btn active">
+            Sign In
+          </button>
+  
+          <button type="button" id="signUpBtn" class="switch-btn">
+            Sign Up
+          </button>
+        </div>
+  
+        <form id="signInForm" class="auth-form">
+          <div class="form-group">
+            <label for="signInEmail">Email</label>
+            <input
+              type="email"
+              id="signInEmail"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+  
+          <div class="form-group">
+            <label for="signInPassword">Password</label>
+            <input
+              type="password"
+              id="signInPassword"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+  
+          <button type="submit" class="primary-btn">
+            Sign In
+          </button>
+        </form>
+  
+        <form id="signUpForm" class="auth-form hidden">
+          <div class="form-group">
+            <label for="fullName">Full Name</label>
+            <input
+              type="text"
+              id="fullName"
+              placeholder="Enter your full name"
+              required
+            />
+          </div>
+  
+          <div class="form-group">
+            <label for="signUpEmail">Email</label>
+            <input
+              type="email"
+              id="signUpEmail"
+              placeholder="Enter your email"
+              required
+            />
+          </div>
+  
+          <div class="form-group">
+            <label for="signUpPassword">Password</label>
+            <input
+              type="password"
+              id="signUpPassword"
+              placeholder="Create a password"
+              minlength="6"
+              required
+            />
+          </div>
+  
+          <button type="submit" class="primary-btn">
+            Sign Up
+          </button>
+        </form>
+  
+        <p id="authMessage" class="auth-message"></p>
+  
+      </section>
+    </main>
+  </body>
+</html>
