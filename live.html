@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Brackets — World Cup Bananas</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  .page { max-width: var(--container-max); margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-12); }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    position: relative; display: inline-flex; gap: 4px; padding: 5px;
+    background: var(--surface-sunken); border-radius: var(--radius-md); margin-bottom: var(--space-8);
+  }
+  .tab-pill {
+    position: absolute; top: 5px; left: 5px; height: calc(100% - 10px);
+    border-radius: var(--radius-sm); background: var(--surface-card);
+    box-shadow: var(--shadow-xs); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 0;
+  }
+  .tab-btn {
+    position: relative; z-index: 1;
+    border: none; cursor: pointer; padding: 10px 24px; border-radius: var(--radius-sm);
+    font-family: var(--font-sans); font-size: var(--text-body); font-weight: var(--weight-semibold);
+    background: transparent; color: var(--text-muted);
+    transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tab-btn.is-active { color: var(--text-strong); }
+
+  .tab-viewport { overflow: hidden; }
+  .tab-track {
+    display: flex; width: 200%;
+    transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .tab-panel { width: 50%; flex-shrink: 0; min-height: 200px; opacity: 1; }
+  .tab-track[data-active="knockout"] { transform: translateX(-50%); }
+
+  /* ── Group Stage ── */
+  .gs-titlerow {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: var(--space-5); margin-bottom: var(--space-8);
+  }
+  .gs-titlerow h2 { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-h2); letter-spacing: var(--tracking-snug); }
+  .gs-titlerow .sub { color: var(--text-muted); margin-top: 6px; }
+  .gs-tools { display: flex; align-items: flex-end; gap: var(--space-5); }
+
+  .progress { min-width: 170px; }
+  .progress__row { display: flex; justify-content: space-between; font-size: var(--text-label); color: var(--text-muted); margin-bottom: 6px; font-weight: var(--weight-medium); }
+  .progress__row b { font-family: var(--font-numeric); color: var(--text-strong); font-weight: var(--weight-semibold); }
+  .progress__track { height: 8px; border-radius: 99px; background: var(--surface-sunken); overflow: hidden; }
+  .progress__bar { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width var(--dur-slow) var(--ease-out); }
+
+  .groups { display: flex; flex-direction: column; gap: var(--space-6); }
+
+  .gs-card__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5); }
+  .gs-card__title { display: flex; align-items: center; gap: var(--space-3); }
+  .gs-card__letter {
+    display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px;
+    background: var(--primary); color: var(--text-on-primary);
+    font-family: var(--font-display); font-weight: var(--weight-bold); font-size: 16px;
+  }
+  .gs-card__title h3 { font-size: var(--text-h3); font-weight: var(--weight-semibold); }
+  .gs-card__body { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--space-6); align-items: start; }
+
+  .gs-matches { display: flex; flex-direction: column; gap: var(--space-3); }
+  .gs-match {
+    display: grid; grid-template-columns: 52px 1fr 28px 16px 28px 1fr 90px;
+    align-items: center; gap: var(--space-3); padding: var(--space-3);
+    background: var(--surface-canvas); box-shadow: var(--shadow-hairline); border-radius: var(--radius-md);
+  }
+  .gs-match__date { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-muted); }
+  .gs-match__team { font-weight: var(--weight-semibold); color: var(--text-strong); font-size: var(--text-body); display: inline-flex; align-items: center; gap: 6px; }
+  .gs-match__team--home { justify-content: flex-end; text-align: right; }
+  .gs-match__team--away { justify-content: flex-start; text-align: left; }
+  .gs-flag { font-size: 16px; line-height: 1; }
+
+  .live-score {
+    font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+    font-weight: var(--weight-bold); font-size: var(--text-title); color: var(--text-strong);
+    min-width: 24px; text-align: center;
+  }
+  .live-score--tbd { color: var(--text-muted); }
+  .live-vs { font-size: var(--text-sm); color: var(--text-muted); text-align: center; min-width: 12px; }
+
+  .live-badge {
+    font-size: var(--text-xs, 11px); font-weight: var(--weight-bold); padding: 3px 8px;
+    border-radius: var(--radius-pill); white-space: nowrap; text-align: center; min-width: 60px;
+    background: var(--surface-sunken); color: var(--text-muted);
+  }
+  .live-badge--ft { background: var(--navy-800); color: #fff; }
+  .live-badge--live { background: #dc2626; color: #fff; animation: pulse 1.5s infinite; }
+  .live-badge--sched { background: var(--surface-sunken); color: var(--text-muted); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  @media (max-width: 920px) {
+    .gs-card__body { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .gs-match { grid-template-columns: 44px 1fr 24px 12px 24px 1fr 80px; gap: 8px; }
+    .gs-match__team { font-size: var(--text-sm); }
+  }
+
+  /* ── Knockout ── */
+  .ko-titlerow { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-7); }
+  .ko-titlerow h2 { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-h2); letter-spacing: var(--tracking-snug); }
+  .ko-titlerow .sub { color: var(--text-muted); margin-top: 6px; }
+
+  .champion {
+    display: flex; align-items: center; gap: var(--space-5);
+    background: linear-gradient(120deg, var(--navy-800), var(--navy-900));
+    border-radius: var(--radius-xl); padding: var(--space-6) var(--space-7);
+    box-shadow: var(--shadow-md); margin-bottom: var(--space-6);
+  }
+  .champion__trophy {
+    width: 64px; height: 64px; border-radius: var(--radius-full); display: grid; place-items: center;
+    font-size: 30px; background: rgba(250,186,23,0.18); flex-shrink: 0;
+  }
+  .champion__label { color: rgba(255,255,255,0.6); }
+  .champion__name { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-h2); color: #fff; display: flex; align-items: center; gap: 12px; }
+
+  .bracket-panel {
+    background: var(--navy-950); border-radius: var(--radius-xl);
+    padding: var(--space-7) var(--space-6); overflow-x: auto; box-shadow: var(--shadow-md);
+  }
+  .bracket { display: flex; gap: 0; min-width: 1180px; align-items: stretch; }
+  .bk-col { display: flex; flex-direction: column; flex: 1; min-width: 210px; padding-inline: var(--space-3); }
+  .bk-col__label { color: rgba(255,255,255,0.5); text-align: center; margin-bottom: var(--space-4); }
+  .bk-col__matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: var(--space-3); }
+
+  .bk-match {
+    display: flex; flex-direction: column; gap: 2px; position: relative;
+    background: var(--navy-900); border-radius: var(--radius-md); padding: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .bk-col:not(:last-child) .bk-match::after {
+    content: ""; position: absolute; right: calc(var(--space-3) * -1 - 1px); top: 50%;
+    width: var(--space-3); height: 1px; background: rgba(255,255,255,0.14);
+  }
+  .bk-col:not(:first-child) .bk-match::before {
+    content: ""; position: absolute; left: calc(var(--space-3) * -1); top: 50%;
+    width: var(--space-3); height: 1px; background: rgba(255,255,255,0.14);
+  }
+
+  .bk-team {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 9px 12px; border: none; text-align: left;
+    background: transparent; border-radius: var(--radius-sm); color: rgba(255,255,255,0.62);
+    font-family: var(--font-sans); font-size: var(--text-body); font-weight: var(--weight-semibold);
+    cursor: default;
+  }
+  .bk-team__flag { font-size: 16px; line-height: 1; width: 18px; }
+  .bk-team__name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bk-team__tick { color: var(--marigold-500); font-weight: var(--weight-bold); font-family: var(--font-numeric); }
+  .bk-team.is-winner { color: #fff; background: rgba(77,171,250,0.16); }
+  .bk-team.is-loser { color: rgba(255,255,255,0.32); }
+  .bk-team.is-empty { color: rgba(255,255,255,0.28); }
+
+  .bk-col[data-round="4"] .bk-match { box-shadow: inset 0 0 0 1px rgba(250,186,23,0.4); background: rgba(250,186,23,0.06); }
+  .bk-col[data-round="4"] .bk-team.is-winner { background: var(--marigold-500); color: var(--navy-950); }
+  .bk-col[data-round="4"] .bk-team.is-winner .bk-team__tick { color: var(--navy-950); }
+
+  .third { margin-top: var(--space-6); display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+  .third__head h3 { font-family: var(--font-display); font-size: var(--text-h3); }
+  .third__head p { color: var(--text-muted); font-size: var(--text-sm); margin-top: 4px; }
+  .bk-match--third { background: var(--navy-900); }
+  .bk-match--third .bk-team.is-winner { background: rgba(250,186,23,0.2); color: #fff; }
+  .bk-third__hint { color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-4); background: var(--surface-sunken); border-radius: var(--radius-md); }
+
+  @media (max-width: 760px) {
+    .third { flex-direction: column; align-items: stretch; }
+  }
+
+  .meta-row { display: flex; align-items: center; gap: var(--space-4); color: var(--text-muted); font-size: var(--text-sm); }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+      <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+    </a>
+    <nav class="app-header__nav">
+      <a href="welcome.html" class="navlink hide-mobile">How it works</a>
+      <a href="brackets.html" class="navlink hide-mobile">Your Brackets</a>
+      <a href="live.html" class="navlink is-active">Live Brackets</a>
+      <a href="leaderboard.html" class="navlink hide-mobile">Leaderboard</a>
+      <span class="badge badge--primary hide-mobile"><span class="badge__dot"></span>Gameweek 1</span>
+      <button type="button" id="logoutBtn" class="btn btn--secondary btn--sm">Log out</button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="tab-bar">
+      <div class="tab-pill" id="tabPill"></div>
+      <button type="button" class="tab-btn is-active" data-tab="groups">Group Stage</button>
+      <button type="button" class="tab-btn" data-tab="knockout">Knockout</button>
+    </div>
+
+    <div class="tab-viewport">
+    <div class="tab-track" id="tabTrack">
+
+    <!-- ════ GROUP STAGE TAB ════ -->
+    <div id="tab-groups" class="tab-panel">
+      <div class="gs-titlerow">
+        <div>
+          <p class="overline">Real results · 12 groups · 72 matches</p>
+          <h2>Live Group Stage</h2>
+          <p class="sub">Actual match results from the 2026 FIFA World Cup. Auto-refreshes every 2 minutes.</p>
+        </div>
+        <div class="gs-tools">
+          <div class="meta-row">
+            <span>Finished: <b id="liveFinished">0/72</b></span>
+            <span id="liveUpdated"></span>
+          </div>
+        </div>
+      </div>
+
+      <section id="liveGroupsContainer" class="groups"></section>
+    </div>
+
+    <!-- ════ KNOCKOUT TAB ════ -->
+    <div id="tab-knockout" class="tab-panel">
+      <div class="ko-titlerow">
+        <div>
+          <p class="overline">Real results · single elimination</p>
+          <h2>Live Knockout Bracket</h2>
+          <p class="sub">Actual knockout round results as they happen.</p>
+        </div>
+      </div>
+
+      <div class="champion">
+        <div class="champion__trophy" id="liveChampFlag">🏆</div>
+        <div>
+          <p class="overline champion__label">Tournament champion</p>
+          <p class="champion__name"><span id="liveChampName">—</span></p>
+        </div>
+      </div>
+
+      <div class="bracket-panel">
+        <div class="bracket" id="liveBracket"></div>
+      </div>
+
+      <div class="third">
+        <div class="third__head">
+          <h3>🥉 Third-place play-off</h3>
+          <p>The two beaten semi-finalists.</p>
+        </div>
+        <div id="liveThirdWrap"></div>
+      </div>
+    </div>
+
+    </div><!-- .tab-track -->
+    </div><!-- .tab-viewport -->
+  </main>
+
+  <footer class="app-footer">
+    <div class="container app-footer__inner">
+      <span class="app-footer__fine">World Cup Bananas · Free to play · Not affiliated with FIFA</span>
+      <nav class="app-footer__links">
+        <a href="index.html">Home</a>
+        <a href="brackets.html">Your Brackets</a>
+        <a href="live.html">Live Brackets</a>
+        <a href="leaderboard.html">Leaderboard</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/live.js" defer></script>
+  <script>
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+      localStorage.clear();
+      window.location.href = "login.html";
+    });
+
+    (function () {
+      var tabBtns = document.querySelectorAll(".tab-btn");
+      var track = document.getElementById("tabTrack");
+      var pill = document.getElementById("tabPill");
+
+      function positionPill(btn) {
+        pill.style.width = btn.offsetWidth + "px";
+        pill.style.transform = "translateX(" + (btn.offsetLeft - 5) + "px)";
+      }
+
+      function switchTab(name) {
+        tabBtns.forEach(function (b) { b.classList.toggle("is-active", b.dataset.tab === name); });
+        track.dataset.active = name;
+        tabBtns.forEach(function (b) { if (b.dataset.tab === name) positionPill(b); });
+      }
+
+      tabBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
+      });
+
+      var initial = window.location.hash === "#knockout" ? "knockout" : "groups";
+      pill.style.transition = "none";
+      switchTab(initial);
+      pill.offsetHeight;
+      pill.style.transition = "";
+
+      window.addEventListener("resize", function () {
+        tabBtns.forEach(function (b) { if (b.classList.contains("is-active")) positionPill(b); });
+      });
+    })();
+  </script>
+</body>
+</html>

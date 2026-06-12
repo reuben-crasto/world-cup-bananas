@@ -10,6 +10,45 @@ const PORT = 3000;
 
 let db;
 
+// football-data.org API config
+const FOOTBALL_API_BASE = "https://api.football-data.org/v4";
+const FOOTBALL_API_TOKEN = "019e80f1f89b4c62b9d9f1aa9011d208";
+const CACHE_TTL = 60_000; // 60 seconds
+
+// API name → our internal name
+const API_TO_LOCAL = {
+  "South Korea": "Rep. of Korea",
+  "Czechia": "Czech Rep.",
+  "Bosnia-Herzegovina": "Bosnia/Herzeg.",
+  "United States": "USA",
+  "Iran": "IR Iran",
+  "Cape Verde Islands": "Cape Verde",
+  "Congo DR": "DR Congo"
+};
+
+const liveCache = {};
+
+async function fetchFootballAPI(endpoint) {
+  const now = Date.now();
+  if (liveCache[endpoint] && now - liveCache[endpoint].ts < CACHE_TTL) {
+    return liveCache[endpoint].data;
+  }
+  const res = await fetch(`${FOOTBALL_API_BASE}${endpoint}`, {
+    headers: { "X-Auth-Token": FOOTBALL_API_TOKEN }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`football-data.org ${res.status}: ${text}`);
+  }
+  const data = await res.json();
+  liveCache[endpoint] = { data, ts: now };
+  return data;
+}
+
+function mapTeamName(apiName) {
+  return API_TO_LOCAL[apiName] || apiName;
+}
+
 // Middleware
 app.use(express.json());
 
@@ -42,10 +81,7 @@ async function initDatabase() {
   console.log("Database connected successfully.");
 }
 
-// Home route
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "login.html"));
-});
+// Home route — landing page (index.html is served by static middleware)
 
 // Signup route
 app.post("/api/signup", async (req, res) => {
@@ -163,6 +199,54 @@ app.post("/api/signin", async (req, res) => {
       success: false,
       message: "Something went wrong during signin."
     });
+  }
+});
+
+// Live match results
+app.get("/api/live/matches", async (req, res) => {
+  try {
+    const data = await fetchFootballAPI("/competitions/WC/matches");
+    const matches = data.matches.map((m) => ({
+      matchday: m.matchday,
+      group: m.group ? m.group.replace("GROUP_", "").replace("Group ", "") : null,
+      status: m.status,
+      utcDate: m.utcDate,
+      homeTeam: mapTeamName(m.homeTeam.name),
+      awayTeam: mapTeamName(m.awayTeam.name),
+      homeScore: m.score.fullTime.home,
+      awayScore: m.score.fullTime.away,
+      stage: m.stage
+    }));
+    res.json({ success: true, matches });
+  } catch (error) {
+    console.error("Live matches error:", error.message);
+    res.status(502).json({ success: false, message: "Failed to fetch live data." });
+  }
+});
+
+// Live group standings
+app.get("/api/live/standings", async (req, res) => {
+  try {
+    const data = await fetchFootballAPI("/competitions/WC/standings");
+    const standings = data.standings.map((s) => ({
+      group: s.group.replace("GROUP_", "").replace("Group ", ""),
+      table: s.table.map((t) => ({
+        position: t.position,
+        team: mapTeamName(t.team.name),
+        played: t.playedGames,
+        won: t.won,
+        draw: t.draw,
+        lost: t.lost,
+        goalsFor: t.goalsFor,
+        goalsAgainst: t.goalsAgainst,
+        goalDifference: t.goalDifference,
+        points: t.points
+      }))
+    }));
+    res.json({ success: true, standings });
+  } catch (error) {
+    console.error("Live standings error:", error.message);
+    res.status(502).json({ success: false, message: "Failed to fetch live data." });
   }
 });
 

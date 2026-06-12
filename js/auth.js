@@ -1,73 +1,54 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const signInBtn = document.getElementById("signInBtn");
-  const signUpBtn = document.getElementById("signUpBtn");
+(function () {
+  var tabSignin = document.getElementById("tabSignin");
+  var tabSignup = document.getElementById("tabSignup");
+  var signinForm = document.getElementById("signinForm");
+  var signupForm = document.getElementById("signupForm");
+  var authMsg = document.getElementById("authMsg");
+  var authTitle = document.getElementById("authTitle");
 
-  const signInForm = document.getElementById("signInForm");
-  const signUpForm = document.getElementById("signUpForm");
+  if (!tabSignin || !tabSignup || !signinForm || !signupForm || !authMsg) return;
 
-  const authMessage = document.getElementById("authMessage");
-
-  if (!signInBtn || !signUpBtn || !signInForm || !signUpForm || !authMessage) {
-    console.error("One or more login page elements are missing.");
-    console.log({
-      signInBtn,
-      signUpBtn,
-      signInForm,
-      signUpForm,
-      authMessage
-    });
-    return;
+  function setMode(mode) {
+    var signin = mode === "signin";
+    tabSignin.classList.toggle("is-active", signin);
+    tabSignup.classList.toggle("is-active", !signin);
+    signinForm.classList.toggle("is-hidden", !signin);
+    signupForm.classList.toggle("is-hidden", signin);
+    if (authTitle) authTitle.textContent = signin ? "Welcome back" : "Create your account";
+    authMsg.textContent = "";
+    authMsg.className = "auth-msg";
   }
 
-  signInBtn.addEventListener("click", () => {
-    signInBtn.classList.add("active");
-    signUpBtn.classList.remove("active");
+  tabSignin.addEventListener("click", function () { setMode("signin"); });
+  tabSignup.addEventListener("click", function () { setMode("signup"); });
 
-    signInForm.classList.remove("hidden");
-    signUpForm.classList.add("hidden");
+  if (location.hash === "#signup") setMode("signup");
 
-    authMessage.textContent = "";
-    authMessage.classList.remove("success");
-  });
+  function showMsg(text, ok) {
+    authMsg.textContent = text;
+    authMsg.className = "auth-msg " + (ok ? "ok" : "err");
+  }
 
-  signUpBtn.addEventListener("click", () => {
-    signUpBtn.classList.add("active");
-    signInBtn.classList.remove("active");
-
-    signUpForm.classList.remove("hidden");
-    signInForm.classList.add("hidden");
-
-    authMessage.textContent = "";
-    authMessage.classList.remove("success");
-  });
-
-  signInForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const email = document.getElementById("signInEmail").value.trim();
-    const password = document.getElementById("signInPassword").value.trim();
+  signinForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var email = document.getElementById("siEmail").value.trim();
+    var password = document.getElementById("siPass").value.trim();
 
     if (!email || !password) {
-      showMessage("Please enter your email and password.", false);
+      showMsg("Please enter your email and password.", false);
       return;
     }
 
     try {
-      const response = await fetch("/api/signin", {
+      var response = await fetch("/api/signin", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: password })
       });
-
-      const data = await response.json();
+      var data = await response.json();
 
       if (!response.ok) {
-        showMessage(data.message || "Signin failed.", false);
+        showMsg(data.message || "Sign in failed.", false);
         return;
       }
 
@@ -76,47 +57,38 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("fullName", data.user.fullName);
       localStorage.setItem("userEmail", data.user.email);
 
-      window.location.href = "index.html";
+      showMsg("Signed in. Loading your bracket…", true);
+      setTimeout(function () { window.location.href = "welcome.html"; }, 650);
     } catch (error) {
-      console.error("Signin error:", error);
-      showMessage("Could not connect to the server.", false);
+      showMsg("Could not connect to the server.", false);
     }
   });
 
-  signUpForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const fullName = document.getElementById("fullName").value.trim();
-    const email = document.getElementById("signUpEmail").value.trim();
-    const password = document.getElementById("signUpPassword").value.trim();
+  signupForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var fullName = document.getElementById("suName").value.trim();
+    var email = document.getElementById("suEmail").value.trim();
+    var password = document.getElementById("suPass").value;
 
     if (!fullName || !email || !password) {
-      showMessage("Please fill in all fields.", false);
+      showMsg("Please fill in all fields.", false);
       return;
     }
-
     if (password.length < 6) {
-      showMessage("Password must be at least 6 characters.", false);
+      showMsg("Password must be at least 6 characters.", false);
       return;
     }
 
     try {
-      const response = await fetch("/api/signup", {
+      var response = await fetch("/api/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          fullName,
-          email,
-          password
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: fullName, email: email, password: password })
       });
-
-      const data = await response.json();
+      var data = await response.json();
 
       if (!response.ok) {
-        showMessage(data.message || "Signup failed.", false);
+        showMsg(data.message || "Sign up failed.", false);
         return;
       }
 
@@ -125,20 +97,10 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("fullName", data.user.fullName);
       localStorage.setItem("userEmail", data.user.email);
 
-      window.location.href = "index.html";
+      showMsg("Account created. Welcome to the game!", true);
+      setTimeout(function () { window.location.href = "welcome.html"; }, 650);
     } catch (error) {
-      console.error("Signup error:", error);
-      showMessage("Could not connect to the server.", false);
+      showMsg("Could not connect to the server.", false);
     }
   });
-
-  function showMessage(message, success) {
-    authMessage.textContent = message;
-
-    if (success) {
-      authMessage.classList.add("success");
-    } else {
-      authMessage.classList.remove("success");
-    }
-  }
-});
+})();

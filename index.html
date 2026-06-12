@@ -1,199 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>World Cup Bananas — Predict every scoreline</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 50% 0%, #ffffff 0%, var(--azure-50) 55%, #dcebff 100%),
+      var(--azure-50);
+  }
+  .hero__inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    max-width: 780px;
+    margin: 0 auto;
+    padding-block: clamp(64px, 11vw, 132px);
+    padding-inline: var(--space-6);
+    z-index: 2;
+  }
+  .hero__copy { display: contents; }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: var(--weight-bold);
+    font-size: clamp(38px, 6.2vw, 66px);
+    line-height: 1.02;
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-strong);
+    margin-bottom: var(--space-6);
+    text-wrap: balance;
+  }
+  .hero p.lede {
+    font-size: var(--text-body-lg);
+    color: var(--text-body);
+    line-height: var(--leading-normal);
+    max-width: 540px;
+    margin: 0 auto var(--space-8);
+    text-wrap: pretty;
+  }
+  .hero .badge { margin-bottom: var(--space-6); }
 
-  <title>Welcome | World Cup Bananas</title>
+  .how { background: var(--surface-canvas); }
+  .how__head { text-align: center; margin-bottom: var(--space-10); }
+  .how__head h2 {
+    font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-size: var(--text-h2); letter-spacing: var(--tracking-snug);
+  }
+  .how__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+  .how-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-6); }
+  .how-card__icon {
+    width: 44px; height: 44px; border-radius: var(--radius-full);
+    display: grid; place-items: center;
+    background: var(--primary); color: var(--neutral-0);
+  }
+  .how-card__icon svg { width: 22px; height: 22px; }
+  .how-card h3 { font-family: var(--font-display); font-size: var(--text-h3); font-weight: var(--weight-bold); }
+  .how-card p { color: var(--text-muted); font-size: var(--text-body); }
 
-  <link rel="stylesheet" href="css/index.css" />
-  <script src="js/index.js" defer></script>
+  .why { background: var(--surface-canvas); padding-bottom: var(--space-20); }
+  .why__grid {
+    display: grid; grid-template-columns: 0.95fr 1.05fr; gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+  .why__copy h2 {
+    font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-size: var(--text-h2); letter-spacing: var(--tracking-snug); margin-bottom: var(--space-6);
+  }
+  .why__list { display: flex; flex-direction: column; gap: var(--space-5); }
+  .why__list p { color: var(--text-body); font-size: var(--text-body-lg); text-wrap: pretty; }
+  .why__list strong { color: var(--text-strong); font-weight: var(--weight-semibold); }
+
+  .bracket-preview {
+    border-radius: var(--radius-lg); overflow: hidden;
+    background: var(--navy-900); box-shadow: var(--shadow-md);
+  }
+  .bracket-preview__cap { background: rgba(77,171,250,0.18); padding: 12px 16px; }
+  .bracket-preview__cap .overline { color: rgba(255,255,255,0.85); }
+  .bracket-row { display: flex; align-items: center; justify-content: space-between; padding: 16px; }
+  .bracket-row__team { font-size: var(--text-body); font-weight: var(--weight-semibold); color: rgba(255,255,255,0.62); display: inline-flex; align-items: center; gap: 10px; }
+  .bracket-row.is-winner { background: rgba(255,255,255,0.02); }
+  .bracket-row.is-winner .bracket-row__team { color: #fff; }
+  .bracket-row__score {
+    width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center;
+    font-family: var(--font-numeric); font-weight: var(--weight-bold); font-variant-numeric: tabular-nums;
+    background: rgba(255,255,255,0.1); color: #fff;
+  }
+  .bracket-row.is-winner .bracket-row__score { background: var(--marigold-500); color: var(--navy-950); }
+  .bracket-hr { height: 1px; background: rgba(255,255,255,0.08); }
+  .bracket-preview__foot { background: rgba(250,186,23,0.15); padding: 12px 16px; }
+  .bracket-preview__foot span { font-size: var(--text-label); font-weight: var(--weight-bold); color: var(--marigold-500); }
+
+  @media (max-width: 860px) {
+    .how__grid { grid-template-columns: 1fr; }
+    .why__grid { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
-
 <body>
-  <main class="welcome-page">
-    <section class="welcome-card">
 
-      <header class="welcome-header">
-        <div class="title-row">
-          <div>
-            <p class="small-title">Prediction Game</p>
-            <h1>
-              World Cup <span>Bananas</span>
-            </h1>
+  <header class="app-header">
+    <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+      <span class="logo__words">
+        <span class="logo__sup">World Cup</span>
+        <span class="logo__name">Bananas</span>
+      </span>
+    </a>
+    <a href="login.html" class="btn btn--secondary btn--sm">Log in</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <span class="badge badge--primary"><span class="badge__dot"></span>Prediction game · FIFA 2026</span>
+          <h1>Call every scoreline.<br />Settle it on the pitch.</h1>
+          <p class="lede">World Cup Bananas is a free prediction game for the 2026 tournament. Predict the exact scores, build your bracket all the way to the final, and climb the leaderboard as the real matches play out.</p>
+          <a href="login.html#signup" class="btn btn--primary btn--lg">Create your Bracket</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="how section">
+      <div class="container">
+        <div class="how__head">
+          <h2>How it works</h2>
+        </div>
+        <div class="how__grid">
+          <article class="card how-card">
+            <span class="how-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1v.2h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2Z"/></svg>
+            </span>
+            <h3>Predict.</h3>
+            <p>Enter a score for all 72 group-stage matches, then call the knockouts round by round.</p>
+          </article>
+          <article class="card how-card">
+            <span class="how-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8-4.3-4.1 5.9-.9L12 3Z"/></svg>
+            </span>
+            <h3>Score</h3>
+            <p>Points are awarded on accuracy as results come in. The closer your call, the more you gain.</p>
+          </article>
+          <article class="card how-card">
+            <span class="how-card__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="13" y="7" width="3" height="10" rx="1"/></svg>
+            </span>
+            <h3>Climb</h3>
+            <p>Watch your name rise up the leaderboard and find out who really knows their football.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="why">
+      <div class="container">
+        <div class="why__grid">
+          <div class="bracket-preview" aria-hidden="true">
+            <div class="bracket-preview__cap"><span class="overline">Round of 16 · Match 07</span></div>
+            <div class="bracket-row">
+              <span class="bracket-row__team">&#x1F1E7;&#x1F1F7;&nbsp;Brazil</span>
+              <span class="bracket-row__score">1</span>
+            </div>
+            <div class="bracket-hr"></div>
+            <div class="bracket-row is-winner">
+              <span class="bracket-row__team">&#x1F1E6;&#x1F1F7;&nbsp;Argentina</span>
+              <span class="bracket-row__score">2</span>
+            </div>
+            <div class="bracket-preview__foot"><span>&#x1F3C6; Argentina advances to Quarterfinals</span></div>
           </div>
-
-          <div class="trophy-icon" aria-hidden="true">
-            🏆
+          <div class="why__copy">
+            <h2>Why it's more fun than a normal bracket</h2>
+            <div class="why__list">
+              <p><strong>True scoreline predictions.</strong> Most bracket games stop at who advances. Here you predict the exact result of every match, so a 2-1 and a 3-0 are not the same call.</p>
+              <p><strong>Standings that update live.</strong> As you enter scores, the group tables recalculate in front of you. See exactly who you are sending through.</p>
+              <p><strong>Play with your friends.</strong> One tournament, one leaderboard, endless group-chat arguments.</p>
+            </div>
           </div>
         </div>
-
-        <p id="userGreeting" class="user-greeting">
-          Welcome!
-        </p>
-      </header>
-
-      <section class="intro-section">
-        <h2>About the Platform</h2>
-
-        <ul class="banana-list">
-          <li>
-            <span>🍌</span>
-            <p>
-              <strong>World Cup Bananas</strong> is a football prediction game where users fill in their tournament predictions.
-            </p>
-          </li>
-
-          <li>
-            <span>🍌</span>
-            <p>
-              You will predict group stage results, knockout teams, third place, finalist teams, and the final winner.
-            </p>
-          </li>
-
-          <li>
-            <span>🍌</span>
-            <p>
-              All predictions should be completed before the tournament begins or before the chosen deadline.
-            </p>
-          </li>
-
-          <li>
-            <span>🍌</span>
-            <p>
-              Points are awarded based on how close your predictions are to the actual tournament results.
-            </p>
-          </li>
-        </ul>
-      </section>
-
-      <section class="rules-section">
-        <h2>How Brackets Can Be Filled</h2>
-
-        <div class="info-grid">
-          <article class="info-box">
-            <h3>1. Manual Entry</h3>
-            <p>
-              Users can manually fill in match predictions for every group stage game.
-            </p>
-          </article>
-
-          <article class="info-box">
-            <h3>2. Score Predictions</h3>
-            <p>
-              Enter the expected goals for both teams. These scores will decide wins, losses, draws, and standings.
-            </p>
-          </article>
-
-          <article class="info-box">
-            <h3>3. Knockout Picks</h3>
-            <p>
-              After group predictions, users will select who advances through each knockout round.
-            </p>
-          </article>
-
-          <article class="info-box">
-            <h3>4. Final Winner</h3>
-            <p>
-              Complete the bracket by choosing the third-place winner, finalist teams, and overall champion.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section class="points-section">
-        <h2>Points System</h2>
-
-        <div class="points-card">
-          <h3>A. Group Stage</h3>
-
-          <ul>
-            <li>
-              Correct result — win, loss, or draw:
-              <strong>3 points</strong>
-            </li>
-
-            <li>
-              Correct number of goals for one team:
-              <strong>1 point</strong>
-            </li>
-
-            <li>
-              Correct goal difference, but wrong direction:
-              <strong>1 point</strong>
-            </li>
-
-            <li>
-              Correct goal difference and correct direction:
-              <strong>2 points</strong>
-            </li>
-          </ul>
-        </div>
-
-        <div class="points-card">
-          <h3>B. Knockout Stage</h3>
-
-          <ul>
-            <li>
-              Each correct team in the last 16:
-              <strong>3 points</strong>
-            </li>
-
-            <li>
-              Each correct team in the quarter-finals:
-              <strong>4 points</strong>
-            </li>
-
-            <li>
-              Each correct team in the semi-finals:
-              <strong>5 points</strong>
-            </li>
-
-            <li>
-              Each correct team in third place:
-              <strong>6 points</strong>
-            </li>
-
-            <li>
-              Each correct team in the final:
-              <strong>8 points</strong>
-            </li>
-
-            <li>
-              Correct third-place winner:
-              <strong>10 points</strong>
-            </li>
-
-            <li>
-              Correct tournament winner:
-              <strong>15 points</strong>
-            </li>
-          </ul>
-        </div>
-
-        <div class="points-card">
-          <h3>C. Bonus</h3>
-
-          <ul>
-            <li>
-              Watching or participating in a selected match event:
-              <strong>1 point</strong>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <section class="action-section">
-        <a href="group_stage.html" class="start-btn">
-          Go to Group Stage
-        </a>
-
-        <button type="button" id="logoutBtn" class="logout-btn">
-          Logout
-        </button>
-      </section>
-
+      </div>
     </section>
   </main>
+
+  <footer class="app-footer">
+    <div class="container app-footer__inner">
+      <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+        <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+      </a>
+      <nav class="app-footer__links">
+        <a href="welcome.html">How it works</a>
+        <a href="brackets.html">Your Brackets</a>
+        <a href="live.html">Live Brackets</a>
+        <a href="leaderboard.html">Leaderboard</a>
+        <a href="login.html">Log in</a>
+      </nav>
+      <p class="app-footer__fine">Free to play · Not affiliated with FIFA</p>
+    </div>
+  </footer>
 </body>
 </html>
