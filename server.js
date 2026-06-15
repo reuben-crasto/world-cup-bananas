@@ -4,9 +4,21 @@ const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
+const helmet = require("helmet");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.set("trust proxy", 1);
+
+app.use(helmet());
+
+app.use(function (req, res, next) {
+  if (process.env.RAILWAY_ENVIRONMENT && req.headers["x-forwarded-proto"] !== "https") {
+    return res.redirect(301, "https://" + req.headers.host + req.url);
+  }
+  next();
+});
 
 let db;
 
