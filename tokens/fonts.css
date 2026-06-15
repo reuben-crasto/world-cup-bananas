@@ -4,7 +4,7 @@
   font-weight: 200 700;
   font-stretch: 100%;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
 
 @font-face {
@@ -12,5 +12,5 @@
   src: url("../fonts/ClashGrotesk-Variable.ttf") format("truetype");
   font-weight: 600 700;
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
 }
