@@ -1,9 +1,12 @@
 /* World Cup Bananas — shared app stylesheet */
 
 *, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
 html { scroll-behavior: smooth; }
 body {
   margin: 0;
+  display: flex;
+  flex-direction: column;
   font-family: var(--font-sans);
   font-weight: var(--weight-medium);
   font-size: var(--text-body);
@@ -192,11 +195,12 @@ a { color: inherit; text-decoration: none; }
 .standings .check { color: var(--advance-mark); font-weight: var(--weight-bold); margin-right: 6px; }
 
 /* ---------- Footer ---------- */
+main, .page-wrap { flex: 1; }
 .app-footer {
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-card);
   padding: var(--space-10) 0 var(--space-8);
-  margin-top: var(--space-20);
+  margin-top: auto;
 }
 .app-footer__inner {
   display: flex; flex-wrap: wrap; gap: var(--space-6);
