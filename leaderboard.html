@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Leaderboard — World Cup Bananas</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  .page { max-width: 980px; margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-12); }
+  .lb-titlerow { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-7); }
+  .lb-titlerow h1 { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-h1); letter-spacing: var(--tracking-snug); }
+  .lb-titlerow .sub { color: var(--text-muted); margin-top: 6px; }
+
+  .seg { display: inline-flex; gap: 4px; padding: 5px; background: var(--surface-sunken); border-radius: var(--radius-md); }
+  .seg button {
+    border: none; cursor: pointer; padding: 8px 16px; border-radius: var(--radius-sm);
+    font-family: var(--font-sans); font-size: var(--text-sm); font-weight: var(--weight-medium);
+    background: transparent; color: var(--text-muted); transition: all var(--dur-base) var(--ease-out);
+  }
+  .seg button.is-active { background: var(--surface-card); color: var(--text-strong); box-shadow: var(--shadow-xs); }
+
+  .podium { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-7); align-items: end; }
+  .pod { padding: var(--space-5); text-align: center; position: relative; }
+  .pod--1 { order: 2; }
+  .pod--2 { order: 1; }
+  .pod--3 { order: 3; }
+  .pod__medal { font-size: 26px; line-height: 1; }
+  .pod__avatar {
+    width: 54px; height: 54px; border-radius: var(--radius-full); margin: var(--space-3) auto var(--space-2);
+    display: grid; place-items: center; font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-size: var(--text-title); color: var(--neutral-0); background: var(--primary);
+  }
+  .pod--1 .pod__avatar { width: 64px; height: 64px; background: var(--marigold-500); color: var(--navy-950); box-shadow: 0 0 0 4px rgba(250,186,23,0.2); }
+  .pod__name { font-weight: var(--weight-semibold); color: var(--text-strong); font-size: var(--text-body); }
+  .pod__pts { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: var(--weight-bold); font-size: var(--text-h3); color: var(--text-strong); margin-top: 2px; }
+  .pod__pts span { font-size: var(--text-label); color: var(--text-muted); font-weight: var(--weight-medium); }
+
+  .lb-table { overflow: hidden; }
+  .lb-table table { width: 100%; border-collapse: collapse; font-family: var(--font-sans); }
+  .lb-table thead tr { background: var(--surface-inverse); }
+  .lb-table th { color: var(--neutral-0); font-weight: var(--weight-semibold); font-size: var(--text-overline); letter-spacing: var(--tracking-overline); text-transform: uppercase; padding: 12px 16px; text-align: left; }
+  .lb-table th.num, .lb-table td.num { text-align: center; }
+  .lb-table th.pts, .lb-table td.pts { text-align: right; }
+  .lb-table td { padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); font-size: var(--text-body); color: var(--text-body); }
+  .lb-table tbody tr:last-child td { border-bottom: none; }
+  .lb-rank { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: var(--weight-bold); color: var(--text-strong); width: 30px; }
+  .lb-player { display: flex; align-items: center; gap: var(--space-3); }
+  .lb-avatar { width: 34px; height: 34px; border-radius: var(--radius-full); display: grid; place-items: center; font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-sm); color: var(--neutral-0); background: var(--navy-500); flex-shrink: 0; }
+  .lb-name { font-weight: var(--weight-semibold); color: var(--text-strong); }
+  .lb-num { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
+  .lb-pts { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: var(--weight-bold); color: var(--text-strong); font-size: var(--text-title); }
+  .lb-move { display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-sm); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
+  .lb-move--up { color: var(--green-500); }
+  .lb-move--down { color: var(--red-500); }
+  .lb-move--same { color: var(--text-subtle); }
+  tr.is-you { background: var(--primary-soft); }
+  tr.is-you .lb-name::after { content: "You"; margin-left: 8px; font-size: var(--text-overline); letter-spacing: var(--tracking-overline); text-transform: uppercase; color: var(--primary); background: var(--surface-card); padding: 2px 7px; border-radius: var(--radius-pill); font-weight: var(--weight-bold); }
+  tr.is-you .lb-avatar { background: var(--primary); }
+
+  @media (max-width: 620px) {
+    .podium { grid-template-columns: 1fr; }
+    .pod--1, .pod--2, .pod--3 { order: 0; }
+    .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+      <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+    </a>
+    <nav class="app-header__nav">
+      <a href="welcome.html" class="navlink hide-mobile">How it works</a>
+      <a href="brackets.html" class="navlink hide-mobile">Your Brackets</a>
+      <a href="live.html" class="navlink hide-mobile">Live Brackets</a>
+      <a href="leaderboard.html" class="navlink is-active">Leaderboard</a>
+      <span class="badge badge--primary hide-mobile"><span class="badge__dot"></span>Gameweek 1</span>
+      <button type="button" id="logoutBtn" class="btn btn--secondary btn--sm">Log out</button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <div class="lb-titlerow">
+      <div>
+        <p class="overline">Your prediction status</p>
+        <h1>Leaderboard</h1>
+        <p class="sub">Points will update automatically once real match results come in.</p>
+      </div>
+      <div class="seg" role="tablist">
+        <button type="button" class="is-active">Overall</button>
+        <button type="button">This gameweek</button>
+        <button type="button">Friends</button>
+      </div>
+    </div>
+
+    <div class="podium" id="podium"></div>
+
+    <div class="card lb-table">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Player</th>
+            <th class="num hide-sm">Move</th>
+            <th class="num hide-sm">Exact</th>
+            <th class="num hide-sm">Results</th>
+            <th class="pts">Pts</th>
+          </tr>
+        </thead>
+        <tbody id="lbBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container app-footer__inner">
+      <span class="app-footer__fine">World Cup Bananas · Free to play · Not affiliated with FIFA</span>
+      <nav class="app-footer__links">
+        <a href="index.html">Home</a>
+        <a href="brackets.html">Your Brackets</a>
+        <a href="live.html">Live Brackets</a>
+        <a href="welcome.html">How it works</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var isLoggedIn = localStorage.getItem("isLoggedIn");
+      if (isLoggedIn !== "true") { window.location.href = "login.html"; return; }
+
+      document.getElementById("logoutBtn").addEventListener("click", function () {
+        localStorage.clear();
+        window.location.href = "login.html";
+      });
+
+      var userName = localStorage.getItem("fullName") || "You";
+
+      var groupTeams = {
+        A:["Mexico","South Africa","Rep. of Korea","Czech Rep."],B:["Canada","Bosnia/Herzeg.","Qatar","Switzerland"],
+        C:["Brazil","Morocco","Haiti","Scotland"],D:["USA","Paraguay","Australia","Turkey"],
+        E:["Germany","Curaçao","Ivory Coast","Ecuador"],F:["Netherlands","Japan","Sweden","Tunisia"],
+        G:["Belgium","Egypt","IR Iran","New Zealand"],H:["Spain","Cape Verde","Saudi Arabia","Uruguay"],
+        I:["France","Senegal","Iraq","Norway"],J:["Argentina","Algeria","Austria","Jordan"],
+        K:["Portugal","DR Congo","Uzbekistan","Colombia"],L:["England","Croatia","Ghana","Panama"]
+      };
+      var PAIRS = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
+      var LETTERS = Object.keys(groupTeams);
+
+      function initialsOf(n) {
+        var parts = n.trim().split(/\s+/);
+        return ((parts[0]||"")[0]||"Y").toUpperCase()+((parts[1]||"")[0]||"").toUpperCase();
+      }
+      function escapeHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+      function loadJSON(key) {
+        try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e) { return {}; }
+      }
+
+      function scoreGroupStage(liveMatches) {
+        var predictions = loadJSON("groupStagePredictions2026");
+        var pts = 0, exact = 0, correctResults = 0, matchesScored = 0;
+        var breakdown = [];
+
+        var liveByKey = {};
+        liveMatches.forEach(function(m) {
+          if (m.status === "FINISHED" && m.group) {
+            liveByKey[m.homeTeam + "|" + m.awayTeam] = m;
+          }
+        });
+
+        LETTERS.forEach(function(letter, gi) {
+          var teams = groupTeams[letter];
+          PAIRS.forEach(function(p, mi) {
+            var home = teams[p[0]], away = teams[p[1]];
+            var live = liveByKey[home + "|" + away];
+            if (!live) return;
+
+            var pr = predictions["group-" + gi + "-match-" + mi];
+            if (!pr || pr.homeScore == null || pr.homeScore === "" || pr.awayScore == null || pr.awayScore === "") return;
+
+            var ph = Number(pr.homeScore), pa = Number(pr.awayScore);
+            var lh = live.homeScore, la = live.awayScore;
+            matchesScored++;
+            var matchPts = 0;
+
+            var pResult = ph > pa ? 1 : ph < pa ? -1 : 0;
+            var lResult = lh > la ? 1 : lh < la ? -1 : 0;
+
+            if (ph === lh && pa === la) {
+              matchPts += 3 + 2 + 2;
+              exact++;
+              correctResults++;
+            } else {
+              if (pResult === lResult) { matchPts += 3; correctResults++; }
+              if (ph === lh || pa === la) matchPts += 1;
+              var pGD = ph - pa, lGD = lh - la;
+              if (Math.abs(pGD) === Math.abs(lGD)) {
+                matchPts += (pGD === lGD) ? 2 : 1;
+              }
+            }
+            pts += matchPts;
+            if (matchPts > 0) breakdown.push(home + " vs " + away + ": +" + matchPts);
+          });
+        });
+
+        return { pts: pts, exact: exact, correctResults: correctResults, matchesScored: matchesScored, breakdown: breakdown };
+      }
+
+      function renderBoard(gs) {
+        var totalPts = gs.pts;
+        var initials = escapeHtml(initialsOf(userName));
+        var name = escapeHtml(userName);
+        var matchInfo = gs.matchesScored > 0
+          ? gs.matchesScored + " match" + (gs.matchesScored > 1 ? "es" : "") + " scored"
+          : "No finished matches yet";
+
+        document.getElementById("podium").innerHTML =
+          '<div class="card pod pod--1" style="order:0;">' +
+            '<div class="pod__medal">&#9917;</div>' +
+            '<div class="pod__avatar">' + initials + '</div>' +
+            '<div class="pod__name">' + name + '</div>' +
+            '<div class="pod__pts">' + totalPts + '<span> pts</span></div>' +
+            '<div style="color:var(--text-muted);font-size:var(--text-sm);margin-top:6px;">' + matchInfo + '</div>' +
+          '</div>';
+
+        var breakdownRows = "";
+        if (gs.breakdown.length > 0) {
+          breakdownRows = gs.breakdown.map(function(b) {
+            return '<tr><td colspan="4" style="padding:8px 16px;color:var(--text-muted);font-size:var(--text-sm);">' + escapeHtml(b) + '</td></tr>';
+          }).join("");
+        }
+
+        document.getElementById("lbBody").innerHTML =
+          '<tr class="is-you">' +
+            '<td class="lb-rank">1</td>' +
+            '<td><div class="lb-player"><span class="lb-avatar">' + initials + '</span><span class="lb-name">' + name + '</span></div></td>' +
+            '<td class="num hide-sm"><span class="lb-move lb-move--same">–</span></td>' +
+            '<td class="num lb-num hide-sm">' + gs.exact + '</td>' +
+            '<td class="num lb-num hide-sm">' + gs.correctResults + '</td>' +
+            '<td class="pts lb-pts">' + totalPts + '</td>' +
+          '</tr>' +
+          breakdownRows +
+          (gs.matchesScored === 0 ?
+            '<tr><td colspan="6" style="text-align:center;padding:var(--space-8);color:var(--text-muted);">Points will appear once real match results come in.</td></tr>'
+            : '');
+      }
+
+      renderBoard({ pts: 0, exact: 0, correctResults: 0, matchesScored: 0, breakdown: [] });
+
+      fetch("/api/live/matches")
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (!data.success || !data.matches) return;
+          var gs = scoreGroupStage(data.matches);
+          renderBoard(gs);
+        })
+        .catch(function() {});
+    })();
+  </script>
+</body>
+</html>

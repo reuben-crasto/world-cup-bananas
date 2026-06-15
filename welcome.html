@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How it works — World Cup Bananas</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  .page { max-width: var(--container-max); margin: 0 auto; padding: var(--space-12) var(--space-6) var(--space-8); }
+
+  .welcome-hero { text-align: center; max-width: 680px; margin: 0 auto var(--space-12); }
+  .welcome-hero h1 {
+    font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-size: var(--text-h1); letter-spacing: var(--tracking-tight); margin: var(--space-5) 0 var(--space-4);
+  }
+  .welcome-hero p { color: var(--text-muted); font-size: var(--text-body-lg); text-wrap: pretty; }
+
+  .block { margin-bottom: var(--space-12); }
+  .block__head { margin-bottom: var(--space-6); }
+  .block__head h2 { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-h2); letter-spacing: var(--tracking-snug); }
+  .block__head p { color: var(--text-muted); margin-top: 6px; }
+
+  .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5); }
+  .info-box { padding: var(--space-6); display: flex; gap: var(--space-4); align-items: flex-start; }
+  .info-box__n {
+    flex-shrink: 0; width: 40px; height: 40px; border-radius: var(--radius-md);
+    display: grid; place-items: center; background: var(--primary-soft); color: var(--primary);
+    font-family: var(--font-numeric); font-weight: var(--weight-bold); font-size: var(--text-title);
+  }
+  .info-box h3 { font-size: var(--text-title); margin-bottom: 4px; }
+  .info-box p { color: var(--text-muted); font-size: var(--text-body); }
+
+  .points-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-5); align-items: start; }
+  .points-card { padding: var(--space-6); }
+  .points-card__cap { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+  .points-card__cap .badge { font-family: var(--font-numeric); }
+  .points-card h3 { font-size: var(--text-title); }
+  .points-row {
+    display: flex; justify-content: space-between; align-items: center; gap: var(--space-4);
+    padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle);
+  }
+  .points-row:first-of-type { border-top: none; }
+  .points-row span { color: var(--text-body); font-size: var(--text-body); }
+  .points-row b { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: var(--weight-bold); color: var(--text-strong); white-space: nowrap; }
+
+  .cta-row { display: flex; justify-content: center; gap: var(--space-3); margin-top: var(--space-8); }
+
+  @media (max-width: 860px) {
+    .info-grid, .points-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+      <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+    </a>
+    <nav class="app-header__nav">
+      <a href="welcome.html" class="navlink is-active">How it works</a>
+      <a href="brackets.html" class="navlink hide-mobile">Your Brackets</a>
+      <a href="live.html" class="navlink hide-mobile">Live Brackets</a>
+      <a href="leaderboard.html" class="navlink hide-mobile">Leaderboard</a>
+      <span class="badge badge--primary hide-mobile"><span class="badge__dot"></span>Gameweek 1</span>
+      <button type="button" id="logoutBtn" class="btn btn--secondary btn--sm">Log out</button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="welcome-hero">
+      <span class="badge badge--accent"><span class="badge__dot"></span>You're in · <span id="greetName">Player</span></span>
+      <h1>Build your bracket. Outsmart your mates.</h1>
+      <p>World Cup Bananas is a football prediction game. Fill in your tournament predictions — group results, knockout teams, finalists and the champion — before kickoff, then earn points based on how close your calls are to the real thing.</p>
+    </section>
+
+    <section class="block">
+      <div class="block__head">
+        <p class="overline">Step by step</p>
+        <h2>How brackets can be filled</h2>
+      </div>
+      <div class="info-grid">
+        <article class="card info-box">
+          <span class="info-box__n">1</span>
+          <div>
+            <h3>Manual entry</h3>
+            <p>Fill in match predictions for every group-stage game, yourself, one fixture at a time.</p>
+          </div>
+        </article>
+        <article class="card info-box">
+          <span class="info-box__n">2</span>
+          <div>
+            <h3>Score predictions</h3>
+            <p>Enter expected goals for both teams. Your scores decide wins, draws, losses and the standings.</p>
+          </div>
+        </article>
+        <article class="card info-box">
+          <span class="info-box__n">3</span>
+          <div>
+            <h3>Knockout picks</h3>
+            <p>After the groups, select who advances through each knockout round to the final.</p>
+          </div>
+        </article>
+        <article class="card info-box">
+          <span class="info-box__n">4</span>
+          <div>
+            <h3>Final winner</h3>
+            <p>Complete the bracket by choosing the third-place winner, the two finalists, and the champion.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block__head">
+        <p class="overline">Scoring</p>
+        <h2>Points system</h2>
+        <p>The closer your call, the more you bank. Points accrue automatically as real results come in.</p>
+      </div>
+      <div class="points-grid">
+        <article class="card points-card">
+          <div class="points-card__cap">
+            <span class="badge badge--primary">A</span>
+            <h3>Group stage</h3>
+          </div>
+          <div class="points-row"><span>Correct result — win, draw or loss</span><b>3 pts</b></div>
+          <div class="points-row"><span>Correct goals for one team</span><b>1 pt</b></div>
+          <div class="points-row"><span>Right goal difference, wrong direction</span><b>1 pt</b></div>
+          <div class="points-row"><span>Right goal difference &amp; direction</span><b>2 pts</b></div>
+        </article>
+        <article class="card points-card">
+          <div class="points-card__cap">
+            <span class="badge badge--primary">B</span>
+            <h3>Knockout stage</h3>
+          </div>
+          <div class="points-row"><span>Each correct team — Last 16</span><b>3 pts</b></div>
+          <div class="points-row"><span>Each correct team — Quarter-finals</span><b>4 pts</b></div>
+          <div class="points-row"><span>Each correct team — Semi-finals</span><b>5 pts</b></div>
+          <div class="points-row"><span>Each correct team — Final</span><b>8 pts</b></div>
+          <div class="points-row"><span>Correct third-place winner</span><b>10 pts</b></div>
+          <div class="points-row"><span>Correct tournament winner</span><b>15 pts</b></div>
+        </article>
+      </div>
+      <div class="cta-row">
+        <a href="brackets.html" class="btn btn--accent btn--lg">Go to Your Brackets</a>
+        <a href="live.html" class="btn btn--ghost btn--lg">View Live Brackets</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container app-footer__inner">
+      <span class="app-footer__fine">World Cup Bananas · Free to play · Not affiliated with FIFA</span>
+      <nav class="app-footer__links">
+        <a href="index.html">Home</a>
+        <a href="brackets.html">Your Brackets</a>
+        <a href="live.html">Live Brackets</a>
+        <a href="leaderboard.html">Leaderboard</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var isLoggedIn = localStorage.getItem("isLoggedIn");
+      if (isLoggedIn !== "true") { window.location.href = "login.html"; return; }
+
+      var name = localStorage.getItem("fullName");
+      var el = document.getElementById("greetName");
+      if (name && el) el.textContent = name.split(" ")[0];
+
+      var logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", function () {
+          localStorage.clear();
+          window.location.href = "login.html";
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

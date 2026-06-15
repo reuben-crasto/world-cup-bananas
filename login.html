@@ -1,102 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Log in or Sign up — World Cup Bananas</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  body { background: var(--surface-canvas); }
+  .auth-wrap {
+    min-height: calc(100vh - var(--header-height));
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--space-10) var(--space-5);
+    background: linear-gradient(160deg, var(--navy-900), var(--navy-950));
+  }
+  .auth-card {
+    width: 100%; max-width: 420px;
+    background: var(--surface-card);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    box-shadow: var(--shadow-lg);
+  }
+  .auth-card__logo { display: flex; justify-content: center; margin-bottom: var(--space-5); }
+  .auth-card h2 { text-align: center; font-size: var(--text-h3); font-family: var(--font-display); margin-bottom: 4px; }
+  .auth-card__sub { text-align: center; color: var(--text-muted); font-size: var(--text-sm); margin-bottom: var(--space-6); }
 
-  <title>Login | Prediction Platform</title>
+  .auth-switch {
+    display: flex; gap: 4px; padding: 5px;
+    background: var(--surface-sunken); border-radius: var(--radius-md);
+    margin-bottom: var(--space-6);
+  }
+  .auth-switch button {
+    flex: 1; padding: 10px; border: none; cursor: pointer; border-radius: var(--radius-sm);
+    font-family: var(--font-sans); font-size: var(--text-body); font-weight: var(--weight-medium);
+    background: transparent; color: var(--text-muted);
+    transition: all var(--dur-base) var(--ease-out);
+  }
+  .auth-switch button.is-active {
+    background: var(--primary); color: var(--text-on-primary); box-shadow: var(--shadow-primary);
+  }
 
-  <link rel="stylesheet" href="css/login.css" />
-
-  <!-- defer makes sure JS runs after HTML is loaded -->
-  <script src="js/auth.js" defer></script>
+  .auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
+  .auth-form.is-hidden { display: none; }
+  .auth-msg { text-align: center; margin-top: var(--space-4); font-size: var(--text-sm); min-height: 18px; }
+  .auth-msg.ok { color: var(--green-500); }
+  .auth-msg.err { color: var(--red-500); }
+</style>
 </head>
-
 <body>
-    <main class="auth-page">
-      <section class="auth-card">
-  
-        <div class="auth-header">
-          <h1>Prediction Platform</h1>
-          <p>Sign in or create an account to continue</p>
+  <header class="app-header">
+    <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+      <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+    </a>
+    <a href="index.html" class="btn btn--ghost btn--sm">&larr; Back home</a>
+  </header>
+
+  <main class="auth-wrap">
+    <section class="auth-card">
+      <div class="auth-card__logo">
+        <span class="logo">
+          <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+          <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+        </span>
+      </div>
+      <h2 id="authTitle">Welcome back</h2>
+      <p class="auth-card__sub">Sign in or create an account to start predicting</p>
+
+      <div class="auth-switch" role="tablist">
+        <button type="button" id="tabSignin" class="is-active" role="tab">Sign In</button>
+        <button type="button" id="tabSignup" role="tab">Sign Up</button>
+      </div>
+
+      <form id="signinForm" class="auth-form">
+        <div class="field">
+          <label class="field__label" for="siEmail">Email</label>
+          <input class="field__input" type="email" id="siEmail" placeholder="you@email.com" required />
         </div>
-  
-        <div class="auth-switch">
-          <button type="button" id="signInBtn" class="switch-btn active">
-            Sign In
-          </button>
-  
-          <button type="button" id="signUpBtn" class="switch-btn">
-            Sign Up
-          </button>
+        <div class="field">
+          <label class="field__label" for="siPass">Password</label>
+          <input class="field__input" type="password" id="siPass" placeholder="Enter your password" required />
         </div>
-  
-        <form id="signInForm" class="auth-form">
-          <div class="form-group">
-            <label for="signInEmail">Email</label>
-            <input
-              type="email"
-              id="signInEmail"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-  
-          <div class="form-group">
-            <label for="signInPassword">Password</label>
-            <input
-              type="password"
-              id="signInPassword"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-  
-          <button type="submit" class="primary-btn">
-            Sign In
-          </button>
-        </form>
-  
-        <form id="signUpForm" class="auth-form hidden">
-          <div class="form-group">
-            <label for="fullName">Full Name</label>
-            <input
-              type="text"
-              id="fullName"
-              placeholder="Enter your full name"
-              required
-            />
-          </div>
-  
-          <div class="form-group">
-            <label for="signUpEmail">Email</label>
-            <input
-              type="email"
-              id="signUpEmail"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-  
-          <div class="form-group">
-            <label for="signUpPassword">Password</label>
-            <input
-              type="password"
-              id="signUpPassword"
-              placeholder="Create a password"
-              minlength="6"
-              required
-            />
-          </div>
-  
-          <button type="submit" class="primary-btn">
-            Sign Up
-          </button>
-        </form>
-  
-        <p id="authMessage" class="auth-message"></p>
-  
-      </section>
-    </main>
-  </body>
+        <button type="submit" class="btn btn--primary btn--lg btn--full" style="margin-top:4px">Sign In</button>
+      </form>
+
+      <form id="signupForm" class="auth-form is-hidden">
+        <div class="field">
+          <label class="field__label" for="suName">Full name</label>
+          <input class="field__input" type="text" id="suName" placeholder="Enter your full name" required />
+        </div>
+        <div class="field">
+          <label class="field__label" for="suEmail">Email</label>
+          <input class="field__input" type="email" id="suEmail" placeholder="you@email.com" required />
+        </div>
+        <div class="field">
+          <label class="field__label" for="suPass">Password</label>
+          <input class="field__input" type="password" id="suPass" placeholder="Create a password" minlength="6" required />
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg btn--full" style="margin-top:4px">Sign Up</button>
+      </form>
+
+      <p id="authMsg" class="auth-msg"></p>
+    </section>
+  </main>
+
+  <script src="js/auth.js" defer></script>
+</body>
 </html>
