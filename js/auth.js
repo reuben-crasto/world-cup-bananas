@@ -29,6 +29,48 @@
     authMsg.className = "auth-msg " + (ok ? "ok" : "err");
   }
 
+  function syncFromServer(userId, callback) {
+    var GROUP_KEY = "groupStagePredictions2026";
+    var KNOCKOUT_KEY = "knockoutPicks2026";
+    var R32_KEY = "knockoutR32_2026";
+    var LOCK_KEY = "groupStageLocked2026";
+    var KO_LOCK_KEY = "knockoutLocked2026";
+
+    Promise.all([
+      fetch("/api/predictions/group/" + userId).then(function (r) { return r.json(); }),
+      fetch("/api/predictions/knockout/" + userId).then(function (r) { return r.json(); }),
+      fetch("/api/predictions/locks/" + userId).then(function (r) { return r.json(); })
+    ]).then(function (results) {
+      var groupData = results[0];
+      var knockoutData = results[1];
+      var locksData = results[2];
+
+      if (groupData.success && groupData.predictions && Object.keys(groupData.predictions).length > 0) {
+        localStorage.setItem(GROUP_KEY, JSON.stringify(groupData.predictions));
+      }
+
+      if (knockoutData.success && knockoutData.picks && Object.keys(knockoutData.picks).length > 0) {
+        localStorage.setItem(KNOCKOUT_KEY, JSON.stringify(knockoutData.picks));
+      }
+
+      if (locksData.success && locksData.locks) {
+        if (locksData.locks.group) {
+          localStorage.setItem(LOCK_KEY, "true");
+          if (locksData.locks.group.r32Data) {
+            localStorage.setItem(R32_KEY, JSON.stringify(locksData.locks.group.r32Data));
+          }
+        }
+        if (locksData.locks.knockout) {
+          localStorage.setItem(KO_LOCK_KEY, "true");
+        }
+      }
+
+      callback();
+    }).catch(function () {
+      callback();
+    });
+  }
+
   signinForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     var email = document.getElementById("siEmail").value.trim();
@@ -58,7 +100,9 @@
       localStorage.setItem("userEmail", data.user.email);
 
       showMsg("Signed in. Loading your bracket…", true);
-      setTimeout(function () { window.location.href = "welcome.html"; }, 650);
+      syncFromServer(data.user.id, function () {
+        window.location.href = "welcome.html";
+      });
     } catch (error) {
       showMsg("Could not connect to the server.", false);
     }
@@ -99,6 +143,7 @@
 
       showMsg("Account created. Welcome to the game!", true);
       setTimeout(function () { window.location.href = "welcome.html"; }, 650);
+      // New accounts have no predictions to sync
     } catch (error) {
       showMsg("Could not connect to the server.", false);
     }
