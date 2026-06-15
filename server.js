@@ -11,7 +11,14 @@ const PORT = process.env.PORT || 3000;
 
 app.set("trust proxy", 1);
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "script-src": ["'self'", "https://cdn.jsdelivr.net"]
+    }
+  }
+}));
 
 app.use(function (req, res, next) {
   if (process.env.RAILWAY_ENVIRONMENT && req.headers["x-forwarded-proto"] !== "https") {
