@@ -6,7 +6,7 @@ const sqlite3 = require("sqlite3");
 const { open } = require("sqlite");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 let db;
 
@@ -57,10 +57,10 @@ app.use(express.static(__dirname));
 
 // Initialize database
 async function initDatabase() {
-  const dataDir = path.join(__dirname, "data");
+  const dataDir = process.env.RAILWAY_ENVIRONMENT ? "/app/data" : path.join(__dirname, "data");
 
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir);
+    fs.mkdirSync(dataDir, { recursive: true });
   }
 
   db = await open({
@@ -75,6 +75,40 @@ async function initDatabase() {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS group_predictions (
+      user_id INTEGER NOT NULL,
+      match_key TEXT NOT NULL,
+      home_score INTEGER NOT NULL,
+      away_score INTEGER NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, match_key),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS knockout_predictions (
+      user_id INTEGER NOT NULL,
+      pick_key TEXT NOT NULL,
+      team TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, pick_key),
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_locks (
+      user_id INTEGER NOT NULL,
+      lock_type TEXT NOT NULL,
+      r32_data TEXT,
+      locked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, lock_type),
+      FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
 
@@ -247,6 +281,173 @@ app.get("/api/live/standings", async (req, res) => {
   } catch (error) {
     console.error("Live standings error:", error.message);
     res.status(502).json({ success: false, message: "Failed to fetch live data." });
+  }
+});
+
+// ── Prediction APIs ──
+
+// Save group stage predictions
+app.post("/api/predictions/group", async (req, res) => {
+  try {
+    const { userId, predictions } = req.body;
+    if (!userId || !predictions) {
+      return res.status(400).json({ success: false, message: "userId and predictions required." });
+    }
+    const stmt = await db.prepare(
+      "INSERT OR REPLACE INTO group_predictions (user_id, match_key, home_score, away_score, updated_at) VALUES (?, ?, ?, ?, datetime('now'))"
+    );
+    for (const [key, val] of Object.entries(predictions)) {
+      if (val.homeScore != null && val.homeScore !== "" && val.awayScore != null && val.awayScore !== "") {
+        await stmt.run(userId, key, Number(val.homeScore), Number(val.awayScore));
+      }
+    }
+    await stmt.finalize();
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Save group predictions error:", error);
+    res.status(500).json({ success: false, message: "Failed to save predictions." });
+  }
+});
+
+// Get group stage predictions for a user
+app.get("/api/predictions/group/:userId", async (req, res) => {
+  try {
+    const rows = await db.all(
+      "SELECT match_key, home_score, away_score FROM group_predictions WHERE user_id = ?",
+      [req.params.userId]
+    );
+    const predictions = {};
+    rows.forEach(r => { predictions[r.match_key] = { homeScore: r.home_score, awayScore: r.away_score }; });
+    res.json({ success: true, predictions });
+  } catch (error) {
+    console.error("Get group predictions error:", error);
+    res.status(500).json({ success: false, message: "Failed to load predictions." });
+  }
+});
+
+// Save knockout predictions
+app.post("/api/predictions/knockout", async (req, res) => {
+  try {
+    const { userId, picks } = req.body;
+    if (!userId || !picks) {
+      return res.status(400).json({ success: false, message: "userId and picks required." });
+    }
+    const stmt = await db.prepare(
+      "INSERT OR REPLACE INTO knockout_predictions (user_id, pick_key, team, updated_at) VALUES (?, ?, ?, datetime('now'))"
+    );
+    for (const [key, team] of Object.entries(picks)) {
+      if (team) await stmt.run(userId, key, team);
+    }
+    await stmt.finalize();
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Save knockout predictions error:", error);
+    res.status(500).json({ success: false, message: "Failed to save picks." });
+  }
+});
+
+// Get knockout predictions for a user
+app.get("/api/predictions/knockout/:userId", async (req, res) => {
+  try {
+    const rows = await db.all(
+      "SELECT pick_key, team FROM knockout_predictions WHERE user_id = ?",
+      [req.params.userId]
+    );
+    const picks = {};
+    rows.forEach(r => { picks[r.pick_key] = r.team; });
+    res.json({ success: true, picks });
+  } catch (error) {
+    console.error("Get knockout predictions error:", error);
+    res.status(500).json({ success: false, message: "Failed to load picks." });
+  }
+});
+
+// Save lock state + R32 data
+app.post("/api/predictions/lock", async (req, res) => {
+  try {
+    const { userId, lockType, r32Data } = req.body;
+    if (!userId || !lockType) {
+      return res.status(400).json({ success: false, message: "userId and lockType required." });
+    }
+    await db.run(
+      "INSERT OR REPLACE INTO user_locks (user_id, lock_type, r32_data, locked_at) VALUES (?, ?, ?, datetime('now'))",
+      [userId, lockType, r32Data ? JSON.stringify(r32Data) : null]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Save lock error:", error);
+    res.status(500).json({ success: false, message: "Failed to save lock." });
+  }
+});
+
+// Delete lock state
+app.delete("/api/predictions/lock", async (req, res) => {
+  try {
+    const { userId, lockType } = req.body;
+    if (!userId || !lockType) {
+      return res.status(400).json({ success: false, message: "userId and lockType required." });
+    }
+    await db.run("DELETE FROM user_locks WHERE user_id = ? AND lock_type = ?", [userId, lockType]);
+    if (lockType === "group") {
+      await db.run("DELETE FROM user_locks WHERE user_id = ? AND lock_type = 'knockout'", [userId]);
+      await db.run("DELETE FROM knockout_predictions WHERE user_id = ?", [userId]);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete lock error:", error);
+    res.status(500).json({ success: false, message: "Failed to delete lock." });
+  }
+});
+
+// Get lock state for a user
+app.get("/api/predictions/locks/:userId", async (req, res) => {
+  try {
+    const rows = await db.all(
+      "SELECT lock_type, r32_data FROM user_locks WHERE user_id = ?",
+      [req.params.userId]
+    );
+    const locks = {};
+    rows.forEach(r => {
+      locks[r.lock_type] = { locked: true, r32Data: r.r32_data ? JSON.parse(r.r32_data) : null };
+    });
+    res.json({ success: true, locks });
+  } catch (error) {
+    console.error("Get locks error:", error);
+    res.status(500).json({ success: false, message: "Failed to load locks." });
+  }
+});
+
+// ── Leaderboard API ──
+app.get("/api/leaderboard", async (req, res) => {
+  try {
+    const users = await db.all("SELECT id, full_name, email FROM users");
+    const allGroupPreds = await db.all("SELECT user_id, match_key, home_score, away_score FROM group_predictions");
+    const allKnockoutPicks = await db.all("SELECT user_id, pick_key, team FROM knockout_predictions");
+
+    // Index predictions by user
+    const groupByUser = {};
+    allGroupPreds.forEach(r => {
+      if (!groupByUser[r.user_id]) groupByUser[r.user_id] = {};
+      groupByUser[r.user_id][r.match_key] = { homeScore: r.home_score, awayScore: r.away_score };
+    });
+
+    const knockoutByUser = {};
+    allKnockoutPicks.forEach(r => {
+      if (!knockoutByUser[r.user_id]) knockoutByUser[r.user_id] = {};
+      knockoutByUser[r.user_id][r.pick_key] = r.team;
+    });
+
+    const board = users.map(u => ({
+      id: u.id,
+      name: u.full_name,
+      groupPredictions: groupByUser[u.id] || {},
+      knockoutPicks: knockoutByUser[u.id] || {}
+    }));
+
+    res.json({ success: true, board });
+  } catch (error) {
+    console.error("Leaderboard error:", error);
+    res.status(500).json({ success: false, message: "Failed to load leaderboard." });
   }
 });
 

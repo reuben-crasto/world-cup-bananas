@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Import Predictions — World Cup Bananas</title>
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="css/app.css" />
+<style>
+  .page { max-width: 600px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+  .upload-card {
+    background: var(--surface-card); border-radius: var(--radius-xl);
+    padding: var(--space-8); border: 1px solid var(--border-subtle);
+  }
+  .upload-card h2 {
+    font-family: var(--font-display); font-weight: var(--weight-bold);
+    font-size: var(--text-h2); letter-spacing: var(--tracking-snug); margin-bottom: var(--space-2);
+  }
+  .upload-card p { color: var(--text-muted); margin-bottom: var(--space-6); }
+  .drop-zone {
+    border: 2px dashed var(--border-default); border-radius: var(--radius-lg);
+    padding: var(--space-10) var(--space-6); text-align: center;
+    cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  }
+  .drop-zone:hover, .drop-zone.is-dragover {
+    border-color: var(--azure-400); background: rgba(77, 171, 250, 0.06);
+  }
+  .drop-zone__icon {
+    width: 48px; height: 48px; margin: 0 auto var(--space-4);
+    color: var(--text-muted);
+  }
+  .drop-zone__label { font-weight: var(--weight-semibold); color: var(--text-body); margin-bottom: 4px; }
+  .drop-zone__hint { font-size: var(--text-label); color: var(--text-muted); }
+  .drop-zone__hint a { color: var(--azure-400); text-decoration: underline; cursor: pointer; }
+
+  .import-status {
+    margin-top: var(--space-4); padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md); font-size: var(--text-body); display: none;
+  }
+  .import-status--loading { display: block; color: var(--text-muted); background: var(--surface-sunken); }
+  .import-status--success { display: block; color: var(--lime-400); background: rgba(163, 230, 53, 0.1); }
+  .import-status--error { display: block; color: #f87171; background: rgba(248, 113, 113, 0.1); }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--text-muted); font-size: var(--text-body); margin-bottom: var(--space-6);
+    text-decoration: none;
+  }
+  .back-link:hover { color: var(--text-strong); }
+</style>
+</head>
+<body>
+
+  <header class="app-header">
+    <a href="index.html" class="logo" aria-label="World Cup Bananas home">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16.4605 3.66933L13.2622 6.86933C13.1428 6.9888 13.0405 7.13387 12.9637 7.28747L9.76545 13.6875C9.37313 14.4725 9.68869 15.4368 10.4819 15.8379C11.275 16.2304 12.2302 15.9147 12.6311 15.1211L14.5927 11.1872L15.9914 13.9435L8.23881 26.351C7.76973 27.1019 8 28.0918 8.75053 28.5526C9.50106 29.0219 10.4904 28.7915 10.9509 28.0406L18.7121 15.6245L20.0767 14.9419L22.5585 19.9168C22.7888 20.3776 23.2238 20.7019 23.7355 20.7787C24.2472 20.864 24.7589 20.6934 25.1257 20.3264L29.9273 15.5221C30.2429 15.2064 30.3964 14.7968 30.3964 14.3872C30.3964 13.9776 30.2429 13.568 29.9273 13.2523C29.3047 12.6293 28.2898 12.6293 27.6672 13.2523L24.4434 16.4779L22.2344 12.0661L22.2259 12.0576L19.2579 6.18667L30.6011 4.77013C31.4113 4.66773 31.9998 3.97653 31.9998 3.18293C31.9998 3.11466 31.9913 3.04639 31.9913 2.98666C31.8804 2.10773 31.0787 1.48479 30.2088 1.59573L17.4157 3.2C17.0404 3.25973 16.7078 3.41333 16.4605 3.66933Z" fill="currentColor"/><path d="M14.396 3.1999C14.396 1.43258 12.9641 -0.0001 11.1978 -0.0001C9.43143 -0.0001 7.99951 1.43258 7.99951 3.1999C7.99951 4.96721 9.43143 6.3999 11.1978 6.3999C12.9641 6.3999 14.396 4.96721 14.396 3.1999Z" fill="currentColor"/><path d="M6.39654 28.8C6.39654 27.0327 4.96462 25.6 3.19827 25.6C1.43191 25.6 0 27.0327 0 28.8C0 30.5673 1.43191 32 3.19827 32C4.96462 32 6.39654 30.5673 6.39654 28.8Z" fill="currentColor"/></svg>
+      <span class="logo__words"><span class="logo__sup">World Cup</span><span class="logo__name">Bananas</span></span>
+    </a>
+    <nav class="app-header__nav">
+      <a href="welcome.html" class="navlink hide-mobile">How it works</a>
+      <a href="brackets.html" class="navlink hide-mobile">Your Brackets</a>
+      <a href="live.html" class="navlink hide-mobile">Live Brackets</a>
+      <a href="leaderboard.html" class="navlink hide-mobile">Leaderboard</a>
+      <div class="profile-menu" id="profileMenu">
+        <button type="button" class="profile-btn" id="profileBtn" aria-label="Profile menu">
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22" xmlns="http://www.w3.org/2000/svg"><path d="M9.175 10.825C8.392 10.042 8 9.1 8 8s.392-2.042 1.175-2.825C9.958 4.392 10.9 4 12 4s2.042.392 2.825 1.175C15.608 5.958 16 6.9 16 8s-.392 2.042-1.175 2.825C14.042 11.608 13.1 12 12 12s-2.042-.392-2.825-1.175ZM4 18v-.8c0-.567.146-1.088.438-1.563.291-.475.679-.837 1.162-1.087 1.033-.517 2.083-.904 3.15-1.163C9.817 13.13 10.9 13 12 13s2.183.129 3.25.388c1.067.258 2.117.646 3.15 1.162.483.25.87.613 1.163 1.088.291.475.437.996.437 1.562v.8c0 .55-.196 1.02-.588 1.413A1.926 1.926 0 0 1 18 20H6c-.55 0-1.02-.196-1.413-.587A1.926 1.926 0 0 1 4 18Z" fill="white"/></svg>
+        </button>
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="profile-dropdown__name" id="profileName"></div>
+          <a href="upload.html" class="profile-dropdown__item" id="uploadLink">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import Predictions
+          </a>
+          <button type="button" class="profile-dropdown__item profile-dropdown__item--danger" id="logoutBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log out
+          </button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page">
+    <a href="brackets.html" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Your Brackets
+    </a>
+
+    <div class="upload-card">
+      <h2>Import Predictions</h2>
+      <p>Upload an exported .xlsx file to restore your group stage scores and knockout bracket picks.</p>
+
+      <div class="drop-zone" id="dropZone">
+        <div class="drop-zone__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="48" height="48"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="drop-zone__label">Drop your .xlsx file here</div>
+        <div class="drop-zone__hint">or <a id="browseLink">browse to select</a></div>
+        <input type="file" id="fileInput" accept=".xlsx" hidden />
+      </div>
+
+      <div class="import-status" id="importStatus"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="js/import.js" defer></script>
+  <script src="js/profile-menu.js" defer></script>
+  <script>
+    (function () {
+      var isLoggedIn = localStorage.getItem("isLoggedIn");
+      if (!isLoggedIn) { window.location.href = "login.html"; return; }
+
+      var ADMIN_EMAIL = "crasto.reuben15@gmail.com";
+      var email = (localStorage.getItem("userEmail") || "").toLowerCase();
+      if (email !== ADMIN_EMAIL) {
+        window.location.href = "brackets.html";
+        return;
+      }
+
+      var dropZone = document.getElementById("dropZone");
+      var fileInput = document.getElementById("fileInput");
+      var browseLink = document.getElementById("browseLink");
+      var statusEl = document.getElementById("importStatus");
+
+      browseLink.addEventListener("click", function () { fileInput.click(); });
+
+      fileInput.addEventListener("change", function () {
+        if (fileInput.files.length) handleImportXlsx(fileInput.files[0], statusEl);
+      });
+
+      dropZone.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        dropZone.classList.add("is-dragover");
+      });
+      dropZone.addEventListener("dragleave", function () {
+        dropZone.classList.remove("is-dragover");
+      });
+      dropZone.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dropZone.classList.remove("is-dragover");
+        if (e.dataTransfer.files.length) handleImportXlsx(e.dataTransfer.files[0], statusEl);
+      });
+    })();
+  </script>
+</body>
+</html>
