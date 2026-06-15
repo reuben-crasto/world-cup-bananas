@@ -102,6 +102,9 @@
     };
   });
 
+  var ADMIN_EMAIL = "crasto.reuben15@gmail.com";
+  var isAdmin = (localStorage.getItem("userEmail") || "").toLowerCase() === ADMIN_EMAIL;
+
   var TOTAL = groups.length * 6;
   var predictions = loadPredictions();
   var locked = localStorage.getItem(LOCK_KEY) === "true";
@@ -117,12 +120,41 @@
 
   function matchId(gi, mi) { return "group-" + gi + "-match-" + mi; }
 
+  var userId = localStorage.getItem("userId");
+
   function loadPredictions() {
     var raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
     try { return JSON.parse(raw); } catch (e) { return {}; }
   }
   function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(predictions)); }
+
+  function syncGroupToServer() {
+    if (!userId) return;
+    fetch("/api/predictions/group", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: userId, predictions: predictions })
+    }).catch(function () {});
+  }
+
+  function syncLockToServer(r32) {
+    if (!userId) return;
+    fetch("/api/predictions/lock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: userId, lockType: "group", r32Data: r32 })
+    }).catch(function () {});
+  }
+
+  function syncUnlockToServer() {
+    if (!userId) return;
+    fetch("/api/predictions/lock", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: userId, lockType: "group" })
+    }).catch(function () {});
+  }
 
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
   function flag(t) { return FLAGS[t] || "⚽"; }
@@ -210,7 +242,7 @@
   function updateLockUI() {
     if (locked) {
       if (saveBtn) { saveBtn.textContent = "Predictions Locked"; saveBtn.disabled = true; saveBtn.classList.add("btn--locked"); }
-      if (editBtn) editBtn.style.display = "";
+      if (editBtn) editBtn.style.display = isAdmin ? "" : "none";
       if (autofillWrap) autofillWrap.style.display = "none";
     } else {
       if (saveBtn) { saveBtn.textContent = "Save Predictions"; saveBtn.disabled = false; saveBtn.classList.remove("btn--locked"); }
@@ -359,6 +391,8 @@
     localStorage.setItem(LOCK_KEY, "true");
     localStorage.removeItem("knockoutPicks2026");
     locked = true;
+    syncGroupToServer();
+    syncLockToServer(r32);
     render();
   }
 
@@ -368,6 +402,7 @@
     localStorage.removeItem(R32_KEY);
     localStorage.removeItem("knockoutPicks2026");
     locked = false;
+    syncUnlockToServer();
     render();
   }
 

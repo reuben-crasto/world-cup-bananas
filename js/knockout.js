@@ -25,6 +25,9 @@
     "Bosnia/Herzeg.":"\u{1F1E7}\u{1F1E6}","Curaçao":"\u{1F1E8}\u{1F1FC}"
   };
 
+  var ADMIN_EMAIL = "crasto.reuben15@gmail.com";
+  var isAdmin = (localStorage.getItem("userEmail") || "").toLowerCase() === ADMIN_EMAIL;
+
   var R32 = loadR32();
   var locked = localStorage.getItem(LOCK_KEY) === "true";
 
@@ -57,8 +60,19 @@
   var ROUND_NAMES = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"];
   var picks = load();
 
+  var userId = localStorage.getItem("userId");
+
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
   function save() { localStorage.setItem(KEY, JSON.stringify(picks)); }
+
+  function syncKnockoutToServer() {
+    if (!userId) return;
+    fetch("/api/predictions/knockout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: userId, picks: picks })
+    }).catch(function () {});
+  }
   function flag(t) { return t ? (FLAGS[t] || "⚽") : ""; }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
 
@@ -98,6 +112,7 @@
     picks[key] = team;
     clearDownstream(round, match);
     save();
+    syncKnockoutToServer();
     rounds = buildRounds();
     render();
   }
@@ -117,7 +132,7 @@
   function updateLockUI() {
     if (locked) {
       if (saveBtn) { saveBtn.textContent = "Bracket Locked"; saveBtn.disabled = true; saveBtn.classList.add("btn--locked"); }
-      if (editBtn) editBtn.style.display = "";
+      if (editBtn) editBtn.style.display = isAdmin ? "" : "none";
     } else {
       if (saveBtn) { saveBtn.textContent = "Save & Lock Bracket"; saveBtn.disabled = false; saveBtn.classList.remove("btn--locked"); }
       if (editBtn) editBtn.style.display = "none";
@@ -193,7 +208,7 @@
     if (!locked) {
       Array.prototype.forEach.call(thirdWrap.querySelectorAll(".bk-team"), function (el) {
         el.addEventListener("click", function () {
-          picks["third"] = el.dataset.team; save(); render();
+          picks["third"] = el.dataset.team; save(); syncKnockoutToServer(); render();
         });
       });
     }
@@ -216,6 +231,14 @@
       }
       localStorage.setItem(LOCK_KEY, "true");
       locked = true;
+      syncKnockoutToServer();
+      if (userId) {
+        fetch("/api/predictions/lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userId, lockType: "knockout" })
+        }).catch(function () {});
+      }
       render();
     });
   }
@@ -224,6 +247,13 @@
       if (!confirm("Unlock your bracket to make changes?")) return;
       localStorage.removeItem(LOCK_KEY);
       locked = false;
+      if (userId) {
+        fetch("/api/predictions/lock", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userId, lockType: "knockout" })
+        }).catch(function () {});
+      }
       render();
     });
   }
