@@ -312,44 +312,6 @@
   <script src="js/group_stage.js" defer></script>
   <script src="js/knockout.js" defer></script>
   <script src="js/profile-menu.js" defer></script>
-  <script>
-    (function () {
-      var tabBtns = document.querySelectorAll(".tab-btn");
-      var track = document.getElementById("tabTrack");
-      var pill = document.getElementById("tabPill");
-      var actionBars = { groups: document.getElementById("gs-actions"), knockout: document.getElementById("ko-actions") };
-
-      function positionPill(btn) {
-        pill.style.width = btn.offsetWidth + "px";
-        pill.style.transform = "translateX(" + (btn.offsetLeft - 5) + "px)";
-      }
-
-      function switchTab(name) {
-        tabBtns.forEach(function (b) { b.classList.toggle("is-active", b.dataset.tab === name); });
-        track.dataset.active = name;
-        Object.keys(actionBars).forEach(function (k) { actionBars[k].classList.toggle("is-active", k === name); });
-        tabBtns.forEach(function (b) { if (b.dataset.tab === name) positionPill(b); });
-      }
-
-      tabBtns.forEach(function (btn) {
-        btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
-      });
-
-      document.getElementById("goToKnockoutBtn").addEventListener("click", function () { switchTab("knockout"); window.scrollTo(0, 0); });
-      document.getElementById("goToGroupsBtn").addEventListener("click", function () { switchTab("groups"); window.scrollTo(0, 0); });
-
-      var initial = window.location.hash === "#knockout" ? "knockout" : "groups";
-      // Set pill instantly on load (no transition)
-      pill.style.transition = "none";
-      switchTab(initial);
-      // Force reflow then re-enable transition
-      pill.offsetHeight;
-      pill.style.transition = "";
-
-      window.addEventListener("resize", function () {
-        tabBtns.forEach(function (b) { if (b.classList.contains("is-active")) positionPill(b); });
-      });
-    })();
-  </script>
+  <script src="js/tabs.js"></script>
 </body>
 </html>
