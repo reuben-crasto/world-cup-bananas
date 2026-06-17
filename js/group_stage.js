@@ -109,6 +109,7 @@
   var predictions = loadPredictions();
   var locked = localStorage.getItem(LOCK_KEY) === "true";
   var liveResults = {};
+  var matchSchedule = {};
 
   var container = document.getElementById("groupsContainer");
   var autofillSelect = document.getElementById("autofillSelect");
@@ -161,13 +162,23 @@
 
   function countFilled() {
     var filled = 0;
+    var total = 0;
     groups.forEach(function (g, gi) {
       g.matches.forEach(function (m, mi) {
+        var schedKey = liveKey(m.home, m.away);
+        var sched = matchSchedule[schedKey];
+        var matchPast = sched && new Date(sched.utcDate).getTime() < Date.now();
+        if (matchPast) {
+          filled++;
+          total++;
+          return;
+        }
+        total++;
         var pr = predictions[matchId(gi, mi)];
         if (pr && pr.homeScore !== "" && pr.awayScore !== "" && pr.homeScore != null && pr.awayScore != null) filled++;
       });
     });
-    return filled;
+    return { filled: filled, total: total };
   }
 
   function liveKey(home, away) { return home + "|" + away; }
@@ -195,10 +206,13 @@
         var saved = predictions[id] || {};
         var hv = saved.homeScore != null ? saved.homeScore : "";
         var av = saved.awayScore != null ? saved.awayScore : "";
-        var dis = locked ? " disabled" : "";
+        var schedKey = liveKey(m.home, m.away);
+        var sched = matchSchedule[schedKey];
+        var matchPast = sched && new Date(sched.utcDate).getTime() < Date.now();
+        var dis = (locked || matchPast) ? " disabled" : "";
         var lt = liveTag(m, predictions, id);
         return '' +
-          '<div class="gs-match' + (locked ? ' is-locked' : '') + '">' +
+          '<div class="gs-match' + (locked ? ' is-locked' : '') + (matchPast ? ' is-past' : '') + '">' +
             '<span class="gs-match__date">' + esc(m.date) + '</span>' +
             '<span class="gs-match__team gs-match__team--home">' + esc(m.home) + ' <span class="gs-flag">' + flag(m.home) + '</span></span>' +
             '<input type="number" min="0" class="score-input" data-id="' + id + '" data-side="home" value="' + hv + '" placeholder="0" aria-label="' + esc(m.home) + ' score"' + dis + ' />' +
@@ -305,9 +319,9 @@
   function updateAllTables() { groups.forEach(function (g, gi) { updateTable(gi); }); }
 
   function updateProgress() {
-    var filled = countFilled();
-    if (fillText) fillText.textContent = filled + "/" + TOTAL;
-    if (fillBar) fillBar.style.width = Math.round((filled / TOTAL) * 100) + "%";
+    var counts = countFilled();
+    if (fillText) fillText.textContent = counts.filled + "/" + counts.total;
+    if (fillBar) fillBar.style.width = Math.round((counts.filled / counts.total) * 100) + "%";
   }
 
   function computeR32() {
@@ -380,9 +394,9 @@
   }
 
   function lockPredictions() {
-    var filled = countFilled();
-    if (filled < TOTAL) {
-      alert("Please fill in all " + TOTAL + " match predictions before saving. You have " + filled + "/" + TOTAL + " filled.");
+    var counts = countFilled();
+    if (counts.filled < counts.total) {
+      alert("Please fill in all " + counts.total + " match predictions before saving. You have " + counts.filled + "/" + counts.total + " filled.");
       return;
     }
     save();
@@ -411,14 +425,28 @@
   function autofill(mode) {
     if (!mode || locked) return;
     if (mode === "clear") {
-      predictions = {};
-      localStorage.removeItem(STORAGE_KEY);
+      var kept = {};
+      groups.forEach(function (group, gi) {
+        group.matches.forEach(function (m, mi) {
+          var schedKey = liveKey(m.home, m.away);
+          var sched = matchSchedule[schedKey];
+          var id = matchId(gi, mi);
+          if (sched && new Date(sched.utcDate).getTime() < Date.now() && predictions[id]) {
+            kept[id] = predictions[id];
+          }
+        });
+      });
+      predictions = kept;
+      save();
       render();
       return;
     }
     var balanced = [[1, 1], [0, 0], [2, 1], [1, 0], [2, 2], [1, 2]];
     groups.forEach(function (group, gi) {
       group.matches.forEach(function (m, mi) {
+        var schedKey = liveKey(m.home, m.away);
+        var sched = matchSchedule[schedKey];
+        if (sched && new Date(sched.utcDate).getTime() < Date.now()) return;
         var h = 0, a = 0;
         if (mode === "favorites") {
           var hr = fifaRanks[m.home] || 100, ar = fifaRanks[m.away] || 100;
@@ -464,13 +492,18 @@
       .then(function (data) {
         if (!data.success || !data.matches) return;
         liveResults = {};
+        matchSchedule = {};
         data.matches.forEach(function (m) {
-          if (m.stage && m.stage.indexOf("GROUP") !== -1 && m.status === "FINISHED") {
-            liveResults[liveKey(m.homeTeam, m.awayTeam)] = {
-              status: m.status,
-              homeScore: m.homeScore,
-              awayScore: m.awayScore
-            };
+          if (m.stage && m.stage.indexOf("GROUP") !== -1) {
+            var key = liveKey(m.homeTeam, m.awayTeam);
+            matchSchedule[key] = { utcDate: m.utcDate, status: m.status };
+            if (m.status === "FINISHED") {
+              liveResults[key] = {
+                status: m.status,
+                homeScore: m.homeScore,
+                awayScore: m.awayScore
+              };
+            }
           }
         });
         render();
