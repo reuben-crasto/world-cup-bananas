@@ -463,6 +463,7 @@ app.get("/api/leaderboard", async (req, res) => {
     const board = users.map(u => ({
       id: u.id,
       name: u.full_name,
+      email: u.email,
       createdAt: u.created_at,
       lockedAt: locksByUser[u.id] || null,
       groupPredictions: groupByUser[u.id] || {},

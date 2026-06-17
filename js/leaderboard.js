@@ -22,12 +22,14 @@
   function escapeHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 
   var GRACE_CUTOFF = new Date("2026-06-17T00:00:00Z").getTime();
+  var NO_GRACE_EMAIL = "crasto.reuben15@gmail.com";
 
-  function scoreUser(predictions, liveByKey, userLockedAt, userCreatedAt) {
+  function scoreUser(predictions, liveByKey, userLockedAt, userCreatedAt, userEmail) {
     var pts = 0, exact = 0, correctResults = 0, matchesScored = 0;
     var gracePts = 0, graceCount = 0;
     var breakdown = [];
 
+    var skipGrace = userEmail === NO_GRACE_EMAIL;
     var lockTime = userLockedAt ? new Date(userLockedAt).getTime() : Infinity;
     var createdTime = userCreatedAt ? new Date(userCreatedAt).getTime() : 0;
     var graceRate = createdTime >= GRACE_CUTOFF ? 1.5 : 3;
@@ -40,7 +42,7 @@
         if (!live) return;
 
         var matchKickoff = live.utcDate ? new Date(live.utcDate).getTime() : 0;
-        var isGraceMatch = matchKickoff < lockTime;
+        var isGraceMatch = !skipGrace && matchKickoff < lockTime;
 
         if (isGraceMatch) {
           gracePts += graceRate;
@@ -178,7 +180,7 @@
     });
 
     var entries = boardData.board.map(function(user) {
-      var score = scoreUser(user.groupPredictions, liveByKey, user.lockedAt, user.createdAt);
+      var score = scoreUser(user.groupPredictions, liveByKey, user.lockedAt, user.createdAt, user.email);
       return {
         id: user.id,
         name: user.name,
