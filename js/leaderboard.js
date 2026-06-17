@@ -21,10 +21,16 @@
   }
   function escapeHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 
-  function scoreUser(predictions, liveByKey) {
+  var GRACE_CUTOFF = new Date("2026-06-17T00:00:00Z").getTime();
+
+  function scoreUser(predictions, liveByKey, userLockedAt, userCreatedAt) {
     var pts = 0, exact = 0, correctResults = 0, matchesScored = 0;
     var gracePts = 0, graceCount = 0;
     var breakdown = [];
+
+    var lockTime = userLockedAt ? new Date(userLockedAt).getTime() : Infinity;
+    var createdTime = userCreatedAt ? new Date(userCreatedAt).getTime() : 0;
+    var graceRate = createdTime >= GRACE_CUTOFF ? 1.5 : 3;
 
     LETTERS.forEach(function(letter, gi) {
       var teams = groupTeams[letter];
@@ -33,11 +39,21 @@
         var live = liveByKey[home + "|" + away];
         if (!live) return;
 
+        var matchKickoff = live.utcDate ? new Date(live.utcDate).getTime() : 0;
+        var isGraceMatch = matchKickoff < lockTime;
+
+        if (isGraceMatch) {
+          gracePts += graceRate;
+          graceCount++;
+          breakdown.push({ match: home + " vs " + away, pts: graceRate, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
+          return;
+        }
+
         var pr = predictions["group-" + gi + "-match-" + mi];
         if (!pr || pr.homeScore == null || pr.homeScore === "" || pr.awayScore == null || pr.awayScore === "") {
-          gracePts += 3;
+          gracePts += graceRate;
           graceCount++;
-          breakdown.push({ match: home + " vs " + away, pts: 3, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
+          breakdown.push({ match: home + " vs " + away, pts: graceRate, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
           return;
         }
 
@@ -162,7 +178,7 @@
     });
 
     var entries = boardData.board.map(function(user) {
-      var score = scoreUser(user.groupPredictions, liveByKey);
+      var score = scoreUser(user.groupPredictions, liveByKey, user.lockedAt, user.createdAt);
       return {
         id: user.id,
         name: user.name,

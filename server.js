@@ -439,9 +439,13 @@ app.get("/api/predictions/locks/:userId", async (req, res) => {
 // ── Leaderboard API ──
 app.get("/api/leaderboard", async (req, res) => {
   try {
-    const users = await db.all("SELECT id, full_name, email FROM users");
+    const users = await db.all("SELECT id, full_name, email, created_at FROM users");
     const allGroupPreds = await db.all("SELECT user_id, match_key, home_score, away_score FROM group_predictions");
     const allKnockoutPicks = await db.all("SELECT user_id, pick_key, team FROM knockout_predictions");
+    const allLocks = await db.all("SELECT user_id, lock_type, locked_at FROM user_locks WHERE lock_type = 'group'");
+
+    const locksByUser = {};
+    allLocks.forEach(r => { locksByUser[r.user_id] = r.locked_at; });
 
     // Index predictions by user
     const groupByUser = {};
@@ -459,6 +463,8 @@ app.get("/api/leaderboard", async (req, res) => {
     const board = users.map(u => ({
       id: u.id,
       name: u.full_name,
+      createdAt: u.created_at,
+      lockedAt: locksByUser[u.id] || null,
       groupPredictions: groupByUser[u.id] || {},
       knockoutPicks: knockoutByUser[u.id] || {}
     }));
