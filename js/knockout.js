@@ -28,11 +28,15 @@
   var ADMIN_EMAIL = "crasto.reuben15@gmail.com";
   var isAdmin = (localStorage.getItem("userEmail") || "").toLowerCase() === ADMIN_EMAIL;
 
-  var R32 = loadR32();
-  var locked = localStorage.getItem(LOCK_KEY) === "true";
+  var ROUND_NAMES = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"];
 
   var saveBtn = document.getElementById("koSaveBtn");
   var editBtn = document.getElementById("koEditBtn");
+  var champEl = document.getElementById("champName");
+  var champFlag = document.getElementById("champFlag");
+  var thirdWrap = document.getElementById("thirdWrap");
+
+  var R32, locked, picks, rounds, userId, initialized;
 
   function loadR32() {
     try {
@@ -43,24 +47,6 @@
       return null;
     } catch (e) { return null; }
   }
-
-  if (!R32) {
-    document.getElementById("bracket").innerHTML =
-      '<div style="text-align:center;padding:var(--space-10);color:rgba(255,255,255,0.6);">' +
-        '<p style="font-size:var(--text-h3);margin-bottom:var(--space-4);">No bracket yet</p>' +
-        '<p style="margin-bottom:var(--space-6);">Complete and save your Group Stage predictions first. The knockout bracket will be generated from your group results.</p>' +
-        '<a href="brackets.html" class="btn btn--accent btn--lg">Go to Group Stage</a>' +
-      '</div>';
-    document.getElementById("champName").textContent = "—";
-    if (saveBtn) saveBtn.style.display = "none";
-    if (editBtn) editBtn.style.display = "none";
-    return;
-  }
-
-  var ROUND_NAMES = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"];
-  var picks = load();
-
-  var userId = localStorage.getItem("userId");
 
   function load() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
   function save() { localStorage.setItem(KEY, JSON.stringify(picks)); }
@@ -87,23 +73,21 @@
   }
 
   function buildRounds() {
-    var rounds = [R32.map(function (p) { return p.slice(); })];
+    var rds = [R32.map(function (p) { return p.slice(); })];
     for (var r = 1; r < 5; r++) {
-      var prev = rounds[r - 1];
+      var prev = rds[r - 1];
       var cur = [];
       for (var m = 0; m < prev.length / 2; m++) {
         cur.push([pickOf(r - 1, m * 2), pickOf(r - 1, m * 2 + 1)]);
       }
-      rounds.push(cur);
+      rds.push(cur);
     }
-    return rounds;
+    return rds;
   }
   function pickOf(round, match) {
     var key = round + "-" + match;
     return picks[key] != null ? picks[key] : null;
   }
-
-  var rounds = buildRounds();
 
   function setPick(round, match, team) {
     if (!team || locked) return;
@@ -125,16 +109,12 @@
     if (round >= 2) delete picks["third"];
   }
 
-  var champEl = document.getElementById("champName");
-  var champFlag = document.getElementById("champFlag");
-  var thirdWrap = document.getElementById("thirdWrap");
-
   function updateLockUI() {
     if (locked) {
       if (saveBtn) { saveBtn.textContent = "Bracket Locked"; saveBtn.disabled = true; saveBtn.classList.add("btn--locked"); }
       if (editBtn) editBtn.style.display = isAdmin ? "" : "none";
     } else {
-      if (saveBtn) { saveBtn.textContent = "Save & Lock Bracket"; saveBtn.disabled = false; saveBtn.classList.remove("btn--locked"); }
+      if (saveBtn) { saveBtn.textContent = "Save & Lock Bracket"; saveBtn.disabled = false; saveBtn.classList.remove("btn--locked"); saveBtn.style.display = ""; }
       if (editBtn) editBtn.style.display = "none";
     }
   }
@@ -222,6 +202,33 @@
     '</button>';
   }
 
+  function showEmpty() {
+    document.getElementById("bracket").innerHTML =
+      '<div style="text-align:center;padding:var(--space-10);color:rgba(255,255,255,0.6);">' +
+        '<p style="font-size:var(--text-h3);margin-bottom:var(--space-4);">No bracket yet</p>' +
+        '<p style="margin-bottom:var(--space-6);">Complete and save your Group Stage predictions first. The knockout bracket will be generated from your group results.</p>' +
+        '<a href="brackets.html" class="btn btn--accent btn--lg">Go to Group Stage</a>' +
+      '</div>';
+    champEl.textContent = "—";
+    if (saveBtn) saveBtn.style.display = "none";
+    if (editBtn) editBtn.style.display = "none";
+  }
+
+  function init() {
+    R32 = loadR32();
+    locked = localStorage.getItem(LOCK_KEY) === "true";
+    userId = localStorage.getItem("userId");
+
+    if (!R32) {
+      showEmpty();
+      return;
+    }
+
+    picks = load();
+    rounds = buildRounds();
+    render();
+  }
+
   if (saveBtn) {
     saveBtn.addEventListener("click", function () {
       if (locked) return;
@@ -229,14 +236,26 @@
         alert("Please complete all bracket picks (including the third-place play-off) before locking.");
         return;
       }
+      localStorage.setItem("groupStageLocked2026", "true");
       localStorage.setItem(LOCK_KEY, "true");
       locked = true;
       syncKnockoutToServer();
       if (userId) {
+        var r32Data = localStorage.getItem("knockoutR32_2026");
+        fetch("/api/predictions/lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userId, lockType: "group", r32Data: r32Data ? JSON.parse(r32Data) : null })
+        }).catch(function () {});
         fetch("/api/predictions/lock", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: userId, lockType: "knockout" })
+        }).catch(function () {});
+        fetch("/api/predictions/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userId, predictions: JSON.parse(localStorage.getItem("groupStagePredictions2026") || "{}") })
         }).catch(function () {});
       }
       render();
@@ -246,6 +265,7 @@
     editBtn.addEventListener("click", function () {
       if (!confirm("Unlock your bracket to make changes?")) return;
       localStorage.removeItem(LOCK_KEY);
+      localStorage.removeItem("groupStageLocked2026");
       locked = false;
       if (userId) {
         fetch("/api/predictions/lock", {
@@ -253,10 +273,22 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: userId, lockType: "knockout" })
         }).catch(function () {});
+        fetch("/api/predictions/lock", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userId, lockType: "group" })
+        }).catch(function () {});
       }
       render();
     });
   }
 
-  render();
+  init();
+
+  var koPanel = document.getElementById("ko-actions");
+  if (koPanel) {
+    new MutationObserver(function () {
+      if (koPanel.classList.contains("is-active")) init();
+    }).observe(koPanel, { attributes: true, attributeFilter: ["class"] });
+  }
 })();

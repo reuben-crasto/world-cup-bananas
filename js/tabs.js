@@ -22,10 +22,16 @@
     btn.addEventListener("click", function () { switchTab(btn.dataset.tab); });
   });
 
-  var goToKnockout = document.getElementById("goToKnockoutBtn");
   var goToGroups = document.getElementById("goToGroupsBtn");
-  if (goToKnockout) goToKnockout.addEventListener("click", function () { switchTab("knockout"); window.scrollTo(0, 0); });
-  if (goToGroups) goToGroups.addEventListener("click", function () { switchTab("groups"); window.scrollTo(0, 0); });
+  if (goToGroups) goToGroups.addEventListener("click", function () {
+    var koLocked = localStorage.getItem("knockoutLocked2026") === "true";
+    if (!koLocked && localStorage.getItem("knockoutPicks2026")) {
+      if (!confirm("Going back will reset your knockout bracket picks. Continue?")) return;
+      localStorage.removeItem("knockoutPicks2026");
+    }
+    switchTab("groups");
+    window.scrollTo(0, 0);
+  });
 
   var initial = window.location.hash === "#knockout" ? "knockout" : "groups";
   pill.style.transition = "none";
