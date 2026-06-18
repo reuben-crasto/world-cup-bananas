@@ -2,6 +2,23 @@
   var isLoggedIn = localStorage.getItem("isLoggedIn");
   if (isLoggedIn !== "true") { window.location.href = "login.html"; return; }
 
+  var groupLocked = localStorage.getItem("groupStageLocked2026") === "true";
+  var koLocked = localStorage.getItem("knockoutLocked2026") === "true";
+  if (!groupLocked || !koLocked) {
+    document.querySelector(".page").innerHTML =
+      '<div style="text-align:center;padding:var(--space-12) var(--space-6);">' +
+        '<p style="font-size:var(--text-h2);font-family:var(--font-display);font-weight:var(--weight-bold);margin-bottom:var(--space-6);">Leaderboard Locked</p>' +
+        '<div style="background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:var(--space-6);max-width:480px;margin:0 auto var(--space-6);text-align:left;">' +
+          '<ul style="list-style:disc;padding-left:var(--space-5);margin:0;display:flex;flex-direction:column;gap:var(--space-3);color:var(--text-muted);">' +
+            '<li>Complete and lock both your group stage predictions and knockout bracket to view the leaderboard.</li>' +
+            '<li>Predictions must be locked the day before each match kicks off — any matches not locked in time will use grace points instead.</li>' +
+          '</ul>' +
+        '</div>' +
+        '<a href="brackets.html" class="btn btn--accent btn--lg">Go to Your Brackets</a>' +
+      '</div>';
+    return;
+  }
+
   var currentUserId = localStorage.getItem("userId");
 
   var groupTeams = {

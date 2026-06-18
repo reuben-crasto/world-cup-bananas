@@ -97,6 +97,13 @@
   .bracket-preview__foot { background: rgba(250,186,23,0.15); padding: 12px 16px; }
   .bracket-preview__foot span { font-size: var(--text-label); font-weight: var(--weight-bold); color: var(--marigold-500); }
 
+  .floating-flags {
+    position: absolute; inset: 0; overflow: hidden; z-index: 1; pointer-events: none;
+  }
+  .floating-flag {
+    position: absolute; border-radius: 50%; opacity: 0; will-change: transform, opacity;
+  }
+
   @media (max-width: 860px) {
     .how__grid { grid-template-columns: 1fr; }
     .why__grid { grid-template-columns: 1fr; }
@@ -119,6 +126,7 @@
 
   <main>
     <section class="hero">
+      <div class="floating-flags" id="floatingFlags"></div>
       <div class="hero__inner">
         <div class="hero__copy">
           <h1>Call every scoreline.<br />Settle it on the pitch.</h1>
@@ -204,5 +212,7 @@
       <p class="app-footer__fine">Free to play · Not affiliated with FIFA</p>
     </div>
   </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="js/floating-flags.js"></script>
 </body>
 </html>
