@@ -446,14 +446,12 @@ app.get("/api/leaderboard", async (req, res) => {
     const allLocks = await db.all("SELECT user_id, lock_type, locked_at FROM user_locks");
 
     const groupLockByUser = {};
-    const koLockByUser = {};
     allLocks.forEach(r => {
       if (r.lock_type === "group") groupLockByUser[r.user_id] = r.locked_at;
-      if (r.lock_type === "knockout") koLockByUser[r.user_id] = true;
     });
 
     const lockedUserIds = new Set(
-      users.filter(u => groupLockByUser[u.id] && koLockByUser[u.id]).map(u => u.id)
+      users.filter(u => groupLockByUser[u.id]).map(u => u.id)
     );
 
     // Index predictions by user
