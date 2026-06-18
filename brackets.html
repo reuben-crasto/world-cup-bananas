@@ -297,17 +297,17 @@
 
   <!-- ════ STICKY ACTION BARS ════ -->
   <div class="sticky-actions is-active" id="gs-actions">
-    <button type="button" id="saveBtn" class="btn btn--accent btn--lg">Save Predictions</button>
+    <button type="button" id="goToKnockoutBtn" class="btn btn--accent btn--lg">Continue to Knockout &rarr;</button>
     <button type="button" id="editBtn" class="btn btn--ghost btn--lg" style="display:none">Edit Predictions</button>
-    <button type="button" onclick="exportPredictions()" class="btn btn--secondary btn--lg">Download .xlsx</button>
-    <button type="button" class="btn btn--primary btn--lg" id="goToKnockoutBtn">Continue to Knockout &rarr;</button>
+    <a href="leaderboard.html" class="btn btn--secondary btn--lg">View Leaderboard</a>
+    <button type="button" onclick="exportPredictions()" class="btn btn--ghost btn--lg">Download .xlsx</button>
   </div>
   <div class="sticky-actions" id="ko-actions">
     <button type="button" class="btn btn--ghost btn--lg" id="goToGroupsBtn">&larr; Back to Group Stage</button>
     <button type="button" id="koSaveBtn" class="btn btn--accent btn--lg">Save &amp; Lock Bracket</button>
     <button type="button" id="koEditBtn" class="btn btn--ghost btn--lg" style="display:none">Edit Bracket</button>
-    <button type="button" onclick="exportPredictions()" class="btn btn--secondary btn--lg">Download .xlsx</button>
-    <a href="leaderboard.html" class="btn btn--primary btn--lg">See the leaderboard &rarr;</a>
+    <a href="leaderboard.html" class="btn btn--secondary btn--lg">View Leaderboard</a>
+    <button type="button" onclick="exportPredictions()" class="btn btn--ghost btn--lg">Download .xlsx</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>

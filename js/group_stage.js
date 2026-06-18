@@ -113,7 +113,7 @@
 
   var container = document.getElementById("groupsContainer");
   var autofillSelect = document.getElementById("autofillSelect");
-  var saveBtn = document.getElementById("saveBtn");
+  var goToKnockoutBtn = document.getElementById("goToKnockoutBtn");
   var editBtn = document.getElementById("editBtn");
   var fillText = document.getElementById("fillText");
   var fillBar = document.getElementById("fillBar");
@@ -255,11 +255,11 @@
 
   function updateLockUI() {
     if (locked) {
-      if (saveBtn) { saveBtn.textContent = "Predictions Locked"; saveBtn.disabled = true; saveBtn.classList.add("btn--locked"); }
+      if (goToKnockoutBtn) { goToKnockoutBtn.textContent = "View Knockout →"; goToKnockoutBtn.disabled = false; }
       if (editBtn) editBtn.style.display = isAdmin ? "" : "none";
       if (autofillWrap) autofillWrap.style.display = "none";
     } else {
-      if (saveBtn) { saveBtn.textContent = "Save Predictions"; saveBtn.disabled = false; saveBtn.classList.remove("btn--locked"); }
+      if (goToKnockoutBtn) { goToKnockoutBtn.textContent = "Continue to Knockout →"; goToKnockoutBtn.disabled = false; }
       if (editBtn) editBtn.style.display = "none";
       if (autofillWrap) autofillWrap.style.display = "";
     }
@@ -393,21 +393,22 @@
     });
   }
 
-  function lockPredictions() {
+  function continueToKnockout() {
     var counts = countFilled();
     if (counts.filled < counts.total) {
-      alert("Please fill in all " + counts.total + " match predictions before saving. You have " + counts.filled + "/" + counts.total + " filled.");
+      alert("Please fill in all " + counts.total + " match predictions before continuing. You have " + counts.filled + "/" + counts.total + " filled.");
       return;
     }
     save();
     var r32 = computeR32();
     localStorage.setItem(R32_KEY, JSON.stringify(r32));
-    localStorage.setItem(LOCK_KEY, "true");
-    localStorage.removeItem("knockoutPicks2026");
-    locked = true;
     syncGroupToServer();
-    syncLockToServer(r32);
-    render();
+
+    var knockoutTab = document.querySelector('[data-tab="knockout"]');
+    if (knockoutTab) {
+      knockoutTab.click();
+      window.scrollTo(0, 0);
+    }
   }
 
   function unlockPredictions() {
@@ -472,10 +473,9 @@
       autofillSelect.value = "";
     });
   }
-  if (saveBtn) {
-    saveBtn.addEventListener("click", function () {
-      if (locked) return;
-      lockPredictions();
+  if (goToKnockoutBtn) {
+    goToKnockoutBtn.addEventListener("click", function () {
+      continueToKnockout();
     });
   }
   if (editBtn) {
