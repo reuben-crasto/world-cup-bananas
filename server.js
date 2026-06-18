@@ -15,7 +15,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "script-src": ["'self'", "https://cdn.jsdelivr.net"],
+      "script-src": ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
       "img-src": ["'self'", "https://hatscripts.github.io"]
     }
   }
@@ -443,10 +443,18 @@ app.get("/api/leaderboard", async (req, res) => {
     const users = await db.all("SELECT id, full_name, email, created_at FROM users");
     const allGroupPreds = await db.all("SELECT user_id, match_key, home_score, away_score FROM group_predictions");
     const allKnockoutPicks = await db.all("SELECT user_id, pick_key, team FROM knockout_predictions");
-    const allLocks = await db.all("SELECT user_id, lock_type, locked_at FROM user_locks WHERE lock_type = 'group'");
+    const allLocks = await db.all("SELECT user_id, lock_type, locked_at FROM user_locks");
 
-    const locksByUser = {};
-    allLocks.forEach(r => { locksByUser[r.user_id] = r.locked_at; });
+    const groupLockByUser = {};
+    const koLockByUser = {};
+    allLocks.forEach(r => {
+      if (r.lock_type === "group") groupLockByUser[r.user_id] = r.locked_at;
+      if (r.lock_type === "knockout") koLockByUser[r.user_id] = true;
+    });
+
+    const lockedUserIds = new Set(
+      users.filter(u => groupLockByUser[u.id] && koLockByUser[u.id]).map(u => u.id)
+    );
 
     // Index predictions by user
     const groupByUser = {};
@@ -461,12 +469,12 @@ app.get("/api/leaderboard", async (req, res) => {
       knockoutByUser[r.user_id][r.pick_key] = r.team;
     });
 
-    const board = users.map(u => ({
+    const board = users.filter(u => lockedUserIds.has(u.id)).map(u => ({
       id: u.id,
       name: u.full_name,
       email: u.email,
       createdAt: u.created_at,
-      lockedAt: locksByUser[u.id] || null,
+      lockedAt: groupLockByUser[u.id] || null,
       groupPredictions: groupByUser[u.id] || {},
       knockoutPicks: knockoutByUser[u.id] || {}
     }));

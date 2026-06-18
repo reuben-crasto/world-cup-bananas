@@ -394,15 +394,17 @@
   }
 
   function continueToKnockout() {
-    var counts = countFilled();
-    if (counts.filled < counts.total) {
-      alert("Please fill in all " + counts.total + " match predictions before continuing. You have " + counts.filled + "/" + counts.total + " filled.");
-      return;
+    if (!locked) {
+      var counts = countFilled();
+      if (counts.filled < counts.total) {
+        alert("Please fill in all " + counts.total + " match predictions before continuing. You have " + counts.filled + "/" + counts.total + " filled.");
+        return;
+      }
+      save();
+      syncGroupToServer();
     }
-    save();
     var r32 = computeR32();
     localStorage.setItem(R32_KEY, JSON.stringify(r32));
-    syncGroupToServer();
 
     var knockoutTab = document.querySelector('[data-tab="knockout"]');
     if (knockoutTab) {
