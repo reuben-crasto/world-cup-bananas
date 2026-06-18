@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="styles.css" />
 <link rel="stylesheet" href="css/app.css" />
 <style>
-  .page { max-width: 980px; margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-12); }
+  .page { max-width: var(--container-max); margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-12); }
   .lb-titlerow { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-7); }
   .lb-titlerow h1 { font-family: var(--font-display); font-weight: var(--weight-bold); font-size: var(--text-h1); letter-spacing: var(--tracking-snug); }
   .lb-titlerow .sub { color: var(--text-muted); margin-top: 6px; }
@@ -124,7 +124,6 @@
       <div class="seg" role="tablist">
         <button type="button" class="is-active">Overall</button>
         <button type="button">This gameweek</button>
-        <button type="button">Friends</button>
       </div>
     </div>
 
@@ -145,6 +144,13 @@
         <tbody id="lbBody"></tbody>
       </table>
     </div>
+
+    <div class="card" style="padding:var(--space-6);margin-top:var(--space-7);">
+      <h3 style="font-family:var(--font-display);font-weight:var(--weight-bold);font-size:var(--text-title);margin-bottom:var(--space-4);">Points Progression</h3>
+      <div style="position:relative;height:300px;">
+        <canvas id="progressionChart"></canvas>
+      </div>
+    </div>
   </main>
 
   <footer class="app-footer">
@@ -159,6 +165,7 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="js/leaderboard.js"></script>
   <script src="js/profile-menu.js"></script>
 </body>

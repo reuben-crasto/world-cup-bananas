@@ -70,7 +70,7 @@
     var skipGrace = userEmail === NO_GRACE_EMAIL;
     var lockTime = userLockedAt ? new Date(userLockedAt).getTime() : Infinity;
     var createdTime = userCreatedAt ? new Date(userCreatedAt).getTime() : 0;
-    var graceRate = createdTime >= GRACE_CUTOFF ? 1.5 : 3;
+    var graceRate = createdTime >= GRACE_CUTOFF ? 2 : 3;
 
     LETTERS.forEach(function(letter, gi) {
       var teams = groupTeams[letter];
@@ -200,22 +200,33 @@
 
   renderBoard([]);
 
-  Promise.all([
-    fetch("/api/leaderboard").then(function(r) { return r.json(); }),
-    fetch("/api/live/matches").then(function(r) { return r.json(); })
-  ]).then(function(results) {
-    var boardData = results[0];
-    var liveData = results[1];
-    if (!boardData.success || !liveData.success) return;
+  var cachedBoard = null;
+  var cachedMatches = null;
+  var cachedLiveByKey = null;
+  var activeTab = "overall";
 
-    var liveByKey = {};
-    liveData.matches.forEach(function(m) {
+  function getCurrentMatchday(matches) {
+    var maxDay = 1;
+    matches.forEach(function(m) {
+      if (m.status === "FINISHED" && m.matchday > maxDay) maxDay = m.matchday;
+    });
+    return maxDay;
+  }
+
+  function buildLiveByKey(matches, matchdayFilter) {
+    var map = {};
+    matches.forEach(function(m) {
       if (m.status === "FINISHED" && m.group) {
-        liveByKey[m.homeTeam + "|" + m.awayTeam] = m;
+        if (!matchdayFilter || m.matchday === matchdayFilter) {
+          map[m.homeTeam + "|" + m.awayTeam] = m;
+        }
       }
     });
+    return map;
+  }
 
-    var entries = boardData.board.map(function(user) {
+  function computeEntries(board, liveByKey) {
+    return board.map(function(user) {
       var score = scoreUser(user.groupPredictions, liveByKey, user.lockedAt, user.createdAt, user.email);
       return {
         id: user.id,
@@ -230,7 +241,202 @@
         breakdown: score.breakdown
       };
     });
+  }
 
+  function refreshView() {
+    if (!cachedBoard || !cachedMatches) return;
+    var matchday = activeTab === "gameweek" ? getCurrentMatchday(cachedMatches) : null;
+    var liveByKey = buildLiveByKey(cachedMatches, matchday);
+    var entries = computeEntries(cachedBoard, liveByKey);
     renderBoard(entries);
+  }
+
+  var tabBtns = document.querySelectorAll(".seg button");
+  Array.prototype.forEach.call(tabBtns, function(btn, i) {
+    btn.addEventListener("click", function() {
+      Array.prototype.forEach.call(tabBtns, function(b) { b.classList.remove("is-active"); });
+      btn.classList.add("is-active");
+      activeTab = i === 0 ? "overall" : "gameweek";
+      refreshView();
+    });
+  });
+
+  Promise.all([
+    fetch("/api/leaderboard").then(function(r) { return r.json(); }),
+    fetch("/api/live/matches").then(function(r) { return r.json(); })
+  ]).then(function(results) {
+    var boardData = results[0];
+    var liveData = results[1];
+    if (!boardData.success || !liveData.success) return;
+
+    cachedBoard = boardData.board;
+    cachedMatches = liveData.matches;
+    cachedLiveByKey = buildLiveByKey(cachedMatches, null);
+
+    var entries = computeEntries(cachedBoard, cachedLiveByKey);
+    renderBoard(entries);
+    renderProgressionChart(cachedBoard, cachedMatches);
   }).catch(function() {});
+
+  var LINE_COLORS = [
+    "#4dabfa","#f59e0b","#10b981","#ef4444","#8b5cf6",
+    "#ec4899","#06b6d4","#f97316","#6366f1","#14b8a6"
+  ];
+
+  function scoreMatch(pr, lh, la) {
+    if (!pr || pr.homeScore == null || pr.homeScore === "" || pr.awayScore == null || pr.awayScore === "") return 0;
+    var ph = Number(pr.homeScore), pa = Number(pr.awayScore);
+    var pts = 0;
+    var pR = ph > pa ? 1 : ph < pa ? -1 : 0;
+    var lR = lh > la ? 1 : lh < la ? -1 : 0;
+    if (ph === lh && pa === la) {
+      pts = 7;
+    } else {
+      if (pR === lR) pts += 3;
+      if (ph === lh || pa === la) pts += 1;
+      var pGD = ph - pa, lGD = lh - la;
+      if (Math.abs(pGD) === Math.abs(lGD)) pts += (pGD === lGD) ? 2 : 1;
+    }
+    return pts;
+  }
+
+  function calcMatchPoints(user, m) {
+    var skipGrace = user.email === NO_GRACE_EMAIL;
+    var lockTime = user.lockedAt ? new Date(user.lockedAt).getTime() : Infinity;
+    var createdTime = user.createdAt ? new Date(user.createdAt).getTime() : 0;
+    var graceRate = createdTime >= GRACE_CUTOFF ? 2 : 3;
+    var matchKickoff = m.utcDate ? new Date(m.utcDate).getTime() : 0;
+
+    if (!skipGrace && matchKickoff < lockTime) return graceRate;
+
+    var key = "group-" + LETTERS.indexOf(m.group) + "-match-";
+    var teams = groupTeams[m.group];
+    var matchIdx = -1;
+    PAIRS.forEach(function(p, pi) {
+      if (teams[p[0]] === m.homeTeam && teams[p[1]] === m.awayTeam) matchIdx = pi;
+    });
+    if (matchIdx < 0) return 0;
+
+    var pr = user.groupPredictions[key + matchIdx];
+    if (!pr || pr.homeScore == null || pr.homeScore === "" || pr.awayScore == null || pr.awayScore === "") return graceRate;
+    return scoreMatch(pr, m.homeScore, m.awayScore);
+  }
+
+  function renderProgressionChart(board, matches) {
+    var canvas = document.getElementById("progressionChart");
+    if (!canvas || typeof Chart === "undefined") return;
+
+    var finished = matches.filter(function(m) { return m.status === "FINISHED" && m.group; });
+    finished.sort(function(a, b) { return new Date(a.utcDate) - new Date(b.utcDate); });
+    if (finished.length === 0) return;
+
+    var currentMatchday = 1;
+    finished.forEach(function(m) { if (m.matchday > currentMatchday) currentMatchday = m.matchday; });
+
+    var segments = [];
+    var pastDays = {};
+    finished.forEach(function(m) {
+      if (m.matchday < currentMatchday) {
+        if (!pastDays[m.matchday]) pastDays[m.matchday] = [];
+        pastDays[m.matchday].push(m);
+      }
+    });
+    var sortedPastDays = Object.keys(pastDays).map(Number).sort(function(a, b) { return a - b; });
+    sortedPastDays.forEach(function(day) {
+      segments.push({ type: "day", matchday: day, matches: pastDays[day] });
+    });
+    var currentMatches = finished.filter(function(m) { return m.matchday === currentMatchday; });
+    currentMatches.forEach(function(m) {
+      segments.push({ type: "match", match: m });
+    });
+
+    var labels = segments.map(function(seg) {
+      if (seg.type === "day") return "Matchday " + seg.matchday;
+      var m = seg.match;
+      return m.homeTeam.slice(0, 3).toUpperCase() + " v " + m.awayTeam.slice(0, 3).toUpperCase();
+    });
+
+    var datasets = board.map(function(user, ui) {
+      var cumulative = 0;
+
+      var data = segments.map(function(seg) {
+        if (seg.type === "day") {
+          seg.matches.forEach(function(m) { cumulative += calcMatchPoints(user, m); });
+        } else {
+          cumulative += calcMatchPoints(user, seg.match);
+        }
+        return cumulative;
+      });
+
+      var color = LINE_COLORS[ui % LINE_COLORS.length];
+      return {
+        label: user.name,
+        data: data,
+        borderColor: color,
+        backgroundColor: color,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 7,
+        pointHoverBackgroundColor: "#fff",
+        pointHoverBorderColor: color,
+        pointHoverBorderWidth: 3,
+        borderWidth: 3,
+        fill: {
+          target: "origin",
+          above: color + "18"
+        }
+      };
+    });
+
+    new Chart(canvas, {
+      type: "line",
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "nearest", intersect: false },
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              usePointStyle: true,
+              pointStyle: "circle",
+              padding: 20,
+              font: { size: 12, weight: "500" }
+            }
+          },
+          tooltip: {
+            backgroundColor: "rgba(15,23,42,0.92)",
+            titleFont: { size: 13, weight: "600" },
+            bodyFont: { size: 12 },
+            padding: { top: 10, bottom: 10, left: 14, right: 14 },
+            cornerRadius: 8,
+            displayColors: true,
+            boxWidth: 10,
+            boxHeight: 10,
+            boxPadding: 4,
+            callbacks: {
+              title: function(items) { return items[0].label; },
+              label: function(ctx) {
+                var total = ctx.dataset.data[ctx.dataset.data.length - 1];
+                return " " + ctx.dataset.label + ": " + ctx.parsed.y + " pts (total: " + total + ")";
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { maxRotation: 45, font: { size: 10 }, color: "rgba(100,116,139,0.8)" },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "Points", font: { size: 11, weight: "500" }, color: "rgba(100,116,139,0.8)" },
+            grid: { color: "rgba(0,0,0,0.04)", drawBorder: false },
+            ticks: { font: { size: 10 }, color: "rgba(100,116,139,0.8)" }
+          }
+        }
+      }
+    });
+  }
 })();
