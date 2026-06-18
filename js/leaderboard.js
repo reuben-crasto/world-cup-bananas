@@ -15,11 +15,33 @@
   var PAIRS = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
   var LETTERS = Object.keys(groupTeams);
 
+  var TEAM_CODES = {
+    "Argentina":"ar","France":"fr","Brazil":"br","England":"gb-eng","Portugal":"pt",
+    "Netherlands":"nl","Spain":"es","Belgium":"be","Germany":"de","Croatia":"hr",
+    "Uruguay":"uy","Morocco":"ma","Colombia":"co","Mexico":"mx","Switzerland":"ch",
+    "USA":"us","Senegal":"sn","Japan":"jp","Ecuador":"ec","Austria":"at",
+    "Australia":"au","Turkey":"tr","Rep. of Korea":"kr","Canada":"ca",
+    "Tunisia":"tn","Egypt":"eg","Norway":"no","Algeria":"dz",
+    "Scotland":"gb-sct","Ivory Coast":"ci","Ghana":"gh","Panama":"pa",
+    "South Africa":"za","Qatar":"qa","IR Iran":"ir","New Zealand":"nz",
+    "Saudi Arabia":"sa","Cape Verde":"cv","Iraq":"iq","Jordan":"jo",
+    "DR Congo":"cd","Uzbekistan":"uz","Paraguay":"py","Sweden":"se",
+    "Haiti":"ht","Czech Rep.":"cz","Bosnia/Herzeg.":"ba","Curaçao":"cw"
+  };
+  var FLAG_BASE = "https://hatscripts.github.io/circle-flags/flags/";
+
   function initialsOf(n) {
     var parts = n.trim().split(/\s+/);
     return ((parts[0]||"")[0]||"Y").toUpperCase()+((parts[1]||"")[0]||"").toUpperCase();
   }
   function escapeHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+  function avatarHtml(name, champion, cssClass) {
+    var code = champion ? TEAM_CODES[champion] : null;
+    if (code) {
+      return '<img src="' + FLAG_BASE + code + '.svg" alt="' + escapeHtml(champion) + '" class="' + cssClass + '" style="border-radius:50%;object-fit:cover;" />';
+    }
+    return '<span class="' + cssClass + '">' + escapeHtml(initialsOf(name)) + '</span>';
+  }
 
   var GRACE_CUTOFF = new Date("2026-06-17T00:00:00Z").getTime();
   var NO_GRACE_EMAIL = "crasto.reuben15@gmail.com";
@@ -95,7 +117,6 @@
     var podiumHtml = "";
     var medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
     entries.slice(0, 3).forEach(function(e, i) {
-      var initials = escapeHtml(initialsOf(e.name));
       var isYou = String(e.id) === String(currentUserId);
       var matchInfo = e.matchesScored > 0
         ? e.matchesScored + " scored"
@@ -104,7 +125,7 @@
       podiumHtml +=
         '<div class="card pod pod--' + (i + 1) + '" style="order:' + (i === 0 ? 1 : i === 1 ? 0 : 2) + ';">' +
           '<div class="pod__medal">' + (medals[i] || "") + '</div>' +
-          '<div class="pod__avatar">' + initials + '</div>' +
+          '<div class="pod__avatar">' + avatarHtml(e.name, e.champion, "pod__avatar-img") + '</div>' +
           '<div class="pod__name">' + escapeHtml(e.name) + (isYou ? ' <span style="color:var(--azure-400);font-size:var(--text-sm);">(you)</span>' : '') + '</div>' +
           '<div class="pod__pts">' + e.pts + '<span> pts</span></div>' +
           '<div style="color:var(--text-muted);font-size:var(--text-sm);margin-top:6px;">' + matchInfo + '</div>' +
@@ -113,12 +134,11 @@
     document.getElementById("podium").innerHTML = podiumHtml;
 
     var rows = entries.map(function(e, i) {
-      var initials = escapeHtml(initialsOf(e.name));
       var isYou = String(e.id) === String(currentUserId);
       var uid = "bd-" + e.id;
       var playerRow = '<tr' + (isYou ? ' class="is-you"' : '') + ' data-toggle="' + uid + '" style="cursor:pointer;">' +
         '<td class="lb-rank">' + (i + 1) + '</td>' +
-        '<td><div class="lb-player"><span class="lb-avatar">' + initials + '</span><span class="lb-name">' + escapeHtml(e.name) + (isYou ? ' (you)' : '') + ' <svg class="lb-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>' +
+        '<td><div class="lb-player">' + avatarHtml(e.name, e.champion, "lb-avatar") + '<span class="lb-name">' + escapeHtml(e.name) + (isYou ? ' (you)' : '') + ' <svg class="lb-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span></div></td>' +
         '<td class="num hide-sm"><span class="lb-move lb-move--same">–</span></td>' +
         '<td class="num lb-num hide-sm">' + e.exact + '</td>' +
         '<td class="num lb-num hide-sm">' + e.correctResults + '</td>' +
@@ -184,6 +204,7 @@
       return {
         id: user.id,
         name: user.name,
+        champion: user.knockoutPicks ? user.knockoutPicks["4-0"] : null,
         pts: score.pts,
         exact: score.exact,
         correctResults: score.correctResults,
