@@ -209,6 +209,13 @@
         var schedKey = liveKey(m.home, m.away);
         var sched = matchSchedule[schedKey];
         var matchPast = sched && new Date(sched.utcDate).getTime() < Date.now();
+        if (matchPast && hv === "" && av === "") {
+          var live = liveResults[schedKey];
+          if (live && live.status === "FINISHED") {
+            hv = live.homeScore;
+            av = live.awayScore;
+          }
+        }
         var dis = (locked || matchPast) ? " disabled" : "";
         var lt = liveTag(m, predictions, id);
         return '' +
@@ -277,25 +284,71 @@
     updateProgress();
   }
 
+  function getMatchScore(m, mi, gi) {
+    var pr = predictions[matchId(gi, mi)];
+    if (pr && pr.homeScore !== "" && pr.awayScore !== "" && pr.homeScore != null && pr.awayScore != null) {
+      var hs = Number(pr.homeScore), as2 = Number(pr.awayScore);
+      if (!isNaN(hs) && !isNaN(as2)) return { home: hs, away: as2 };
+    }
+    var live = liveResults[liveKey(m.home, m.away)];
+    if (live && live.status === "FINISHED") {
+      return { home: live.homeScore, away: live.awayScore };
+    }
+    return null;
+  }
+
   function calc(group, gi) {
     var t = {};
     group.teams.forEach(function (team) {
       t[team] = { team: team, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, gd: 0, pts: 0 };
     });
+    var matchResults = [];
     group.matches.forEach(function (m, mi) {
-      var pr = predictions[matchId(gi, mi)];
-      if (!pr || pr.homeScore === "" || pr.awayScore === "" || pr.homeScore == null || pr.awayScore == null) return;
-      var hs = Number(pr.homeScore), as = Number(pr.awayScore);
-      if (isNaN(hs) || isNaN(as)) return;
+      var score = getMatchScore(m, mi, gi);
+      if (!score) return;
+      var hs = score.home, as2 = score.away;
       var H = t[m.home], A = t[m.away];
-      H.p++; A.p++; H.gf += hs; H.ga += as; A.gf += as; A.ga += hs;
-      if (hs > as) { H.w++; A.l++; H.pts += 3; }
-      else if (hs < as) { A.w++; H.l++; A.pts += 3; }
+      H.p++; A.p++; H.gf += hs; H.ga += as2; A.gf += as2; A.ga += hs;
+      if (hs > as2) { H.w++; A.l++; H.pts += 3; }
+      else if (hs < as2) { A.w++; H.l++; A.pts += 3; }
       else { H.d++; A.d++; H.pts++; A.pts++; }
+      matchResults.push({ home: m.home, away: m.away, hs: hs, as: as2 });
     });
+
+    function h2h(teamA, teamB) {
+      var pts = [0, 0], gf = [0, 0], ga = [0, 0];
+      matchResults.forEach(function (mr) {
+        var ai = -1, bi = -1;
+        if (mr.home === teamA && mr.away === teamB) { ai = 0; bi = 1; }
+        else if (mr.home === teamB && mr.away === teamA) { ai = 1; bi = 0; }
+        if (ai < 0) return;
+        var hg = mr.hs, ag = mr.as;
+        gf[ai] += (ai === 0 ? hg : ag); ga[ai] += (ai === 0 ? ag : hg);
+        gf[bi] += (bi === 0 ? hg : ag); ga[bi] += (bi === 0 ? ag : hg);
+        if (hg > ag) { pts[ai === 0 ? 0 : 1] += 3; }
+        else if (hg < ag) { pts[bi === 0 ? 0 : 1] += 3; }
+        else { pts[0]++; pts[1]++; }
+      });
+      var ptsD = pts[0] - pts[1];
+      if (ptsD !== 0) return ptsD > 0 ? -1 : 1;
+      var gdD = (gf[0] - ga[0]) - (gf[1] - ga[1]);
+      if (gdD !== 0) return gdD > 0 ? -1 : 1;
+      var gfD = gf[0] - gf[1];
+      if (gfD !== 0) return gfD > 0 ? -1 : 1;
+      return 0;
+    }
+
     var rows = Object.keys(t).map(function (k) { var r = t[k]; r.gd = r.gf - r.ga; return r; });
     rows.sort(function (a, b) {
-      return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.team.localeCompare(b.team);
+      var d = b.pts - a.pts;
+      if (d !== 0) return d;
+      var h = h2h(a.team, b.team);
+      if (h !== 0) return h;
+      d = b.gd - a.gd;
+      if (d !== 0) return d;
+      d = b.gf - a.gf;
+      if (d !== 0) return d;
+      return a.team.localeCompare(b.team);
     });
     return rows;
   }
