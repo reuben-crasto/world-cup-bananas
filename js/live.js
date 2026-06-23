@@ -55,6 +55,25 @@
   var ROUND_NAMES = ["Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"];
   var KNOCKOUT_STAGES = ["LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "FINAL", "THIRD_PLACE"];
 
+  var R32_TEMPLATE = [
+    {home: "2A", away: "2B"},
+    {home: "1E", away: "3", pool: "ABCDF"},
+    {home: "1F", away: "2C"},
+    {home: "1C", away: "2F"},
+    {home: "1I", away: "3", pool: "CDFGH"},
+    {home: "2E", away: "2I"},
+    {home: "1A", away: "3", pool: "CEFHI"},
+    {home: "1L", away: "3", pool: "EHIJK"},
+    {home: "1D", away: "3", pool: "BEFIJ"},
+    {home: "1G", away: "3", pool: "AEHIJ"},
+    {home: "2K", away: "2L"},
+    {home: "1H", away: "2J"},
+    {home: "1B", away: "3", pool: "EFGIJ"},
+    {home: "1J", away: "2H"},
+    {home: "1K", away: "3", pool: "DEIJL"},
+    {home: "2D", away: "2G"}
+  ];
+
   var container = document.getElementById("liveGroupsContainer");
   var bracketEl = document.getElementById("liveBracket");
   var champNameEl = document.getElementById("liveChampName");
@@ -167,17 +186,116 @@
     }).join("");
   }
 
-  function renderKnockout(matches) {
+  function computeR32FromStandings(standings) {
+    if (!standings || standings.length === 0) return null;
+    var winners = {}, runnersUp = {}, thirdTeams = [];
+    standings.forEach(function (g) {
+      var letter = g.group;
+      var table = g.table;
+      if (table.length < 3) return;
+      winners[letter] = table[0].team;
+      runnersUp[letter] = table[1].team;
+      thirdTeams.push({
+        group: letter, team: table[2].team,
+        pts: table[2].points, gd: table[2].goalDifference, gf: table[2].goalsFor
+      });
+    });
+    if (Object.keys(winners).length < 12) return null;
+
+    thirdTeams.sort(function (a, b) {
+      return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.group.localeCompare(b.group);
+    });
+    var qualified = thirdTeams.slice(0, 8);
+    var qualifiedGroups = qualified.map(function (t) { return t.group; });
+
+    var thirdSlots = [];
+    R32_TEMPLATE.forEach(function (t, i) {
+      if (t.pool) thirdSlots.push({ index: i, pool: t.pool });
+    });
+    var thirdAssignment = {}, usedGroups = {};
+    function solveThird(si) {
+      if (si >= thirdSlots.length) return true;
+      var slot = thirdSlots[si];
+      for (var qi = 0; qi < qualifiedGroups.length; qi++) {
+        var g = qualifiedGroups[qi];
+        if (slot.pool.indexOf(g) !== -1 && !usedGroups[g]) {
+          usedGroups[g] = true;
+          thirdAssignment[slot.index] = g;
+          if (solveThird(si + 1)) return true;
+          delete thirdAssignment[slot.index];
+          usedGroups[g] = false;
+        }
+      }
+      return false;
+    }
+    solveThird(0);
+
+    var thirdByGroup = {};
+    qualified.forEach(function (t) { thirdByGroup[t.group] = t.team; });
+
+    function resolve(src) {
+      var pos = src[0], grp = src[1];
+      if (pos === "1") return winners[grp] || null;
+      if (pos === "2") return runnersUp[grp] || null;
+      return null;
+    }
+
+    return R32_TEMPLATE.map(function (match, i) {
+      var home = resolve(match.home);
+      var away;
+      if (match.away === "3") {
+        var ag = thirdAssignment[i];
+        away = ag ? thirdByGroup[ag] : null;
+      } else {
+        away = resolve(match.away);
+      }
+      return { homeTeam: home, awayTeam: away };
+    });
+  }
+
+  function renderProvisionalR32(r32) {
+    var cards = r32.map(function (m) {
+      var homeName = m.homeTeam || "TBD";
+      var awayName = m.awayTeam || "TBD";
+      var homeEmpty = !m.homeTeam;
+      var awayEmpty = !m.awayTeam;
+      return '<div class="bk-match">' +
+        '<button type="button" class="bk-team' + (homeEmpty ? ' is-empty' : '') + '" disabled>' +
+          '<span class="bk-team__flag">' + (homeEmpty ? '⚽' : flag(homeName)) + '</span>' +
+          '<span class="bk-team__name">' + esc(homeName) + '</span>' +
+        '</button>' +
+        '<button type="button" class="bk-team' + (awayEmpty ? ' is-empty' : '') + '" disabled>' +
+          '<span class="bk-team__flag">' + (awayEmpty ? '⚽' : flag(awayName)) + '</span>' +
+          '<span class="bk-team__name">' + esc(awayName) + '</span>' +
+        '</button>' +
+      '</div>';
+    }).join("");
+
+    bracketEl.innerHTML =
+      '<div class="bk-col" data-round="0">' +
+        '<div class="bk-col__label overline">' + ROUND_NAMES[0] + '</div>' +
+        '<div class="bk-col__matches">' + cards + '</div>' +
+      '</div>';
+  }
+
+  function renderKnockout(matches, standings) {
     var koMatches = matches.filter(function (m) {
       return !m.group && KNOCKOUT_STAGES.indexOf(m.stage) !== -1;
     });
 
-    if (koMatches.length === 0) {
-      bracketEl.innerHTML =
-        '<div style="text-align:center;padding:var(--space-10);color:rgba(255,255,255,0.6);">' +
-          '<p style="font-size:var(--text-h3);margin-bottom:var(--space-4);">No knockout matches yet</p>' +
-          '<p>Knockout stage matches will appear here once the group stage is complete.</p>' +
-        '</div>';
+    var hasRealKO = koMatches.some(function (m) { return m.homeTeam != null || m.awayTeam != null; });
+
+    if (!hasRealKO) {
+      var r32 = computeR32FromStandings(standings);
+      if (r32) {
+        renderProvisionalR32(r32);
+      } else {
+        bracketEl.innerHTML =
+          '<div style="text-align:center;padding:var(--space-10);color:rgba(255,255,255,0.6);">' +
+            '<p style="font-size:var(--text-h3);margin-bottom:var(--space-4);">No knockout matches yet</p>' +
+            '<p>Knockout stage matches will appear here once the group stage is complete.</p>' +
+          '</div>';
+      }
       champNameEl.textContent = "—";
       champFlagEl.textContent = "\u{1F3C6}";
       liveThirdWrap.innerHTML = '<div class="bk-third__hint">Third-place play-off will appear after the semi-finals.</div>';
@@ -295,17 +413,19 @@
   }
 
   function fetchAndRender() {
-    fetch("/api/live/matches")
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (!data.success || !data.matches) return;
-        renderGroups(data.matches);
-        renderKnockout(data.matches);
-        if (lastUpdated) {
-          lastUpdated.textContent = "Updated " + new Date().toLocaleTimeString();
-        }
-      })
-      .catch(function () {});
+    Promise.all([
+      fetch("/api/live/matches").then(function (res) { return res.json(); }),
+      fetch("/api/live/standings").then(function (res) { return res.json(); }).catch(function () { return { success: false }; })
+    ]).then(function (results) {
+      var matchData = results[0];
+      var standingsData = results[1];
+      if (!matchData.success || !matchData.matches) return;
+      renderGroups(matchData.matches);
+      renderKnockout(matchData.matches, standingsData.success ? standingsData.standings : null);
+      if (lastUpdated) {
+        lastUpdated.textContent = "Updated " + new Date().toLocaleTimeString();
+      }
+    }).catch(function () {});
   }
 
   renderEmpty();
