@@ -68,7 +68,6 @@
     var breakdown = [];
 
     var skipGrace = userEmail === NO_GRACE_EMAIL;
-    var lockTime = userLockedAt ? new Date(userLockedAt).getTime() : Infinity;
     var createdTime = userCreatedAt ? new Date(userCreatedAt).getTime() : 0;
     var graceRate = createdTime >= GRACE_CUTOFF ? 2 : 3;
 
@@ -79,21 +78,15 @@
         var live = liveByKey[home + "|" + away];
         if (!live) return;
 
-        var matchKickoff = live.utcDate ? new Date(live.utcDate).getTime() : 0;
-        var isGraceMatch = !skipGrace && matchKickoff < lockTime;
-
-        if (isGraceMatch) {
-          gracePts += graceRate;
-          graceCount++;
-          breakdown.push({ match: home + " vs " + away, pts: graceRate, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
-          return;
-        }
-
         var pr = predictions["group-" + gi + "-match-" + mi];
-        if (!pr || pr.homeScore == null || pr.homeScore === "" || pr.awayScore == null || pr.awayScore === "") {
-          gracePts += graceRate;
-          graceCount++;
-          breakdown.push({ match: home + " vs " + away, pts: graceRate, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
+        var hasPrediction = pr && pr.homeScore != null && pr.homeScore !== "" && pr.awayScore != null && pr.awayScore !== "";
+
+        if (!hasPrediction) {
+          if (!skipGrace) {
+            gracePts += graceRate;
+            graceCount++;
+            breakdown.push({ match: home + " vs " + away, pts: graceRate, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
+          }
           return;
         }
 
