@@ -78,10 +78,18 @@
         var live = liveByKey[home + "|" + away];
         if (!live) return;
 
-        var pr = predictions["group-" + gi + "-match-" + mi];
-        var hasPrediction = pr && pr.homeScore != null && pr.homeScore !== "" && pr.awayScore != null && pr.awayScore !== "";
+        var matchKickoff = live.utcDate ? new Date(live.utcDate).getTime() : 0;
+        var isGraceMatch = !skipGrace && matchKickoff < createdTime;
 
-        if (!hasPrediction) {
+        if (isGraceMatch) {
+          gracePts += graceRate;
+          graceCount++;
+          breakdown.push({ match: home + " vs " + away, pts: graceRate, tag: "grace", pred: "—", actual: live.homeScore + "–" + live.awayScore });
+          return;
+        }
+
+        var pr = predictions["group-" + gi + "-match-" + mi];
+        if (!pr || pr.homeScore == null || pr.homeScore === "" || pr.awayScore == null || pr.awayScore === "") {
           if (!skipGrace) {
             gracePts += graceRate;
             graceCount++;
