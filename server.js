@@ -132,6 +132,26 @@ async function initDatabase() {
     )
   `);
 
+  // One-time fix: if a user's locked_at is after their earliest prediction, restore it
+  try {
+    const locks = await db.all("SELECT ul.user_id, ul.locked_at FROM user_locks ul WHERE ul.lock_type = 'group'");
+    for (const lock of locks) {
+      const earliest = await db.get(
+        "SELECT MIN(updated_at) as first_pred FROM group_predictions WHERE user_id = ?",
+        [lock.user_id]
+      );
+      if (earliest && earliest.first_pred && earliest.first_pred < lock.locked_at) {
+        await db.run(
+          "UPDATE user_locks SET locked_at = ? WHERE user_id = ? AND lock_type = 'group'",
+          [earliest.first_pred, lock.user_id]
+        );
+        console.log("Fixed locked_at for user", lock.user_id, "from", lock.locked_at, "to", earliest.first_pred);
+      }
+    }
+  } catch (e) {
+    console.error("Migration fix error:", e);
+  }
+
   console.log("Database connected successfully.");
 }
 
@@ -389,10 +409,21 @@ app.post("/api/predictions/lock", async (req, res) => {
     if (!userId || !lockType) {
       return res.status(400).json({ success: false, message: "userId and lockType required." });
     }
-    await db.run(
-      "INSERT OR REPLACE INTO user_locks (user_id, lock_type, r32_data, locked_at) VALUES (?, ?, ?, datetime('now'))",
-      [userId, lockType, r32Data ? JSON.stringify(r32Data) : null]
+    const existing = await db.get(
+      "SELECT locked_at FROM user_locks WHERE user_id = ? AND lock_type = ?",
+      [userId, lockType]
     );
+    if (existing) {
+      await db.run(
+        "UPDATE user_locks SET r32_data = ? WHERE user_id = ? AND lock_type = ?",
+        [r32Data ? JSON.stringify(r32Data) : null, userId, lockType]
+      );
+    } else {
+      await db.run(
+        "INSERT INTO user_locks (user_id, lock_type, r32_data, locked_at) VALUES (?, ?, ?, datetime('now'))",
+        [userId, lockType, r32Data ? JSON.stringify(r32Data) : null]
+      );
+    }
     res.json({ success: true });
   } catch (error) {
     console.error("Save lock error:", error);
