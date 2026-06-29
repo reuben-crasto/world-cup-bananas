@@ -56,22 +56,22 @@
   var KNOCKOUT_STAGES = ["LAST_32", "LAST_16", "QUARTER_FINALS", "SEMI_FINALS", "FINAL", "THIRD_PLACE"];
 
   var R32_TEMPLATE = [
-    {home: "2A", away: "2B"},
     {home: "1E", away: "3", pool: "ABCDF"},
-    {home: "1F", away: "2C"},
-    {home: "1C", away: "2F"},
     {home: "1I", away: "3", pool: "CDFGH"},
+    {home: "2A", away: "2B"},
+    {home: "1F", away: "2C"},
+    {home: "2K", away: "2L"},
+    {home: "1H", away: "2J"},
+    {home: "1D", away: "3", pool: "BEFIJ"},
+    {home: "1G", away: "3", pool: "AEHIJ"},
+    {home: "1C", away: "2F"},
     {home: "2E", away: "2I"},
     {home: "1A", away: "3", pool: "CEFHI"},
     {home: "1L", away: "3", pool: "EHIJK"},
-    {home: "1D", away: "3", pool: "BEFIJ"},
-    {home: "1G", away: "3", pool: "AEHIJ"},
-    {home: "2K", away: "2L"},
-    {home: "1H", away: "2J"},
-    {home: "1B", away: "3", pool: "EFGIJ"},
     {home: "1J", away: "2H"},
-    {home: "1K", away: "3", pool: "DEIJL"},
-    {home: "2D", away: "2G"}
+    {home: "2D", away: "2G"},
+    {home: "1B", away: "3", pool: "EFGIJ"},
+    {home: "1K", away: "3", pool: "DEIJL"}
   ];
 
   var container = document.getElementById("liveGroupsContainer");

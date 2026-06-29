@@ -133,6 +133,60 @@ async function initDatabase() {
   `);
 
   console.log("Database connected successfully.");
+
+  await migrateBracketOrder();
+}
+
+const BRACKET_REORDER = [1, 4, 0, 2, 10, 11, 8, 9, 3, 5, 6, 7, 13, 15, 12, 14];
+
+async function migrateBracketOrder() {
+  await db.exec("CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY)");
+  const done = await db.get("SELECT 1 FROM migrations WHERE name = 'bracket_order_v2'");
+  if (done) return;
+
+  console.log("Running bracket order migration...");
+
+  const locks = await db.all("SELECT user_id, r32_data FROM user_locks WHERE lock_type = 'group' AND r32_data IS NOT NULL");
+  for (const lock of locks) {
+    try {
+      const old = JSON.parse(lock.r32_data);
+      if (Array.isArray(old) && old.length === 16) {
+        const reordered = BRACKET_REORDER.map(i => old[i]);
+        await db.run("UPDATE user_locks SET r32_data = ? WHERE user_id = ? AND lock_type = 'group'",
+          [JSON.stringify(reordered), lock.user_id]);
+      }
+    } catch (e) { console.error("R32 migration error for user", lock.user_id, e); }
+  }
+
+  const allPicks = await db.all("SELECT user_id, pick_key, team FROM knockout_predictions");
+  const byUser = {};
+  allPicks.forEach(r => {
+    if (!byUser[r.user_id]) byUser[r.user_id] = {};
+    byUser[r.user_id][r.pick_key] = r.team;
+  });
+
+  for (const [uid, picks] of Object.entries(byUser)) {
+    const newR32Picks = {};
+    for (let i = 0; i < 16; i++) {
+      const oldKey = "0-" + BRACKET_REORDER[i];
+      if (picks[oldKey] != null) newR32Picks["0-" + i] = picks[oldKey];
+    }
+
+    await db.run("DELETE FROM knockout_predictions WHERE user_id = ?", [uid]);
+
+    const stmt = await db.prepare(
+      "INSERT INTO knockout_predictions (user_id, pick_key, team, updated_at) VALUES (?, ?, ?, datetime('now'))"
+    );
+    for (const [key, team] of Object.entries(newR32Picks)) {
+      await stmt.run(uid, key, team);
+    }
+    await stmt.finalize();
+
+    await db.run("DELETE FROM user_locks WHERE user_id = ? AND lock_type = 'knockout'", [uid]);
+  }
+
+  await db.run("INSERT INTO migrations (name) VALUES ('bracket_order_v2')");
+  console.log("Bracket order migration complete.");
 }
 
 // Home route — landing page (index.html is served by static middleware)

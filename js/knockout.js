@@ -214,10 +214,50 @@
     if (editBtn) editBtn.style.display = "none";
   }
 
+  var BRACKET_REORDER = [1, 4, 0, 2, 10, 11, 8, 9, 3, 5, 6, 7, 13, 15, 12, 14];
+  var BRACKET_VERSION_KEY = "knockoutBracketVersion";
+
+  function migrateToV2() {
+    var ver = localStorage.getItem(BRACKET_VERSION_KEY);
+    if (ver && parseInt(ver, 10) >= 2) return;
+
+    var r32 = loadR32();
+    if (r32 && r32.length === 16) {
+      var newR32 = BRACKET_REORDER.map(function (oldIdx) { return r32[oldIdx]; });
+      localStorage.setItem(R32_KEY, JSON.stringify(newR32));
+    }
+
+    var oldPicks = load();
+    var newPicks = {};
+    for (var i = 0; i < 16; i++) {
+      var oldKey = "0-" + BRACKET_REORDER[i];
+      if (oldPicks[oldKey] != null) newPicks["0-" + i] = oldPicks[oldKey];
+    }
+    localStorage.setItem(KEY, JSON.stringify(newPicks));
+
+    localStorage.removeItem(LOCK_KEY);
+    localStorage.setItem(BRACKET_VERSION_KEY, "2");
+
+    if (userId) {
+      fetch("/api/predictions/knockout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userId, picks: newPicks })
+      }).catch(function () {});
+      fetch("/api/predictions/lock", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: userId, lockType: "knockout" })
+      }).catch(function () {});
+    }
+  }
+
   function init() {
+    userId = localStorage.getItem("userId");
+    migrateToV2();
+
     R32 = loadR32();
     locked = localStorage.getItem(LOCK_KEY) === "true";
-    userId = localStorage.getItem("userId");
 
     if (!R32) {
       showEmpty();
